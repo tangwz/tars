@@ -1,6 +1,12 @@
 import { defineConfig } from "vitest/config";
+import { resolve } from "node:path";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@": resolve(__dirname, "./src"),
+    },
+  },
   test: {
     environment: "jsdom",
     setupFiles: ["tests/setup/vitest.setup.ts"],
@@ -8,6 +14,6 @@ export default defineConfig({
   },
   coverage: {
     provider: "v8",
-    include: ["src/lib/**/*.ts"],
+    include: ["src/**/*.{ts,tsx}"],
   },
 });

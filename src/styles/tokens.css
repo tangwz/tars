@@ -1,0 +1,71 @@
+:root {
+  --bg-color: #f0f1f4;
+  --fg-color: #1f2126;
+  --panel-bg: #f7f8fa;
+  --panel-border: #d7dae0;
+  --muted-fg: #6a707b;
+  --divider-color: #d9dde3;
+  --row-hover-bg: #eceff4;
+  --button-bg: #20232a;
+  --button-fg: #f6f7f9;
+  --surface-strong: #ffffff;
+  --surface-muted: #eceff4;
+  --danger-color: #ba4141;
+  --popup-shadow: 0 20px 48px rgb(15 23 42 / 12%);
+  --surface-color: var(--panel-bg);
+  --accent-bg: var(--button-bg);
+  --accent-primary: var(--button-fg);
+  --border-color: var(--panel-border);
+  font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  font-weight: 400;
+  color: var(--fg-color);
+  background-color: var(--bg-color);
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.dark-theme {
+  --bg-color: #111215;
+  --fg-color: #eceef3;
+  --panel-bg: #17191e;
+  --panel-border: #2e323a;
+  --muted-fg: #9097a4;
+  --divider-color: #2b3038;
+  --row-hover-bg: #21262f;
+  --button-bg: #f0f2f6;
+  --button-fg: #151820;
+  --surface-strong: #1e222b;
+  --surface-muted: #171b22;
+  --danger-color: #ff9b9b;
+  --popup-shadow: 0 20px 48px rgb(0 0 0 / 44%);
+  --surface-color: var(--panel-bg);
+  --accent-bg: var(--button-bg);
+  --accent-primary: var(--button-fg);
+  --border-color: var(--panel-border);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--fg-color);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-color) 94%, var(--fg-color)),
+    color-mix(in srgb, var(--bg-color) 88%, var(--surface-muted))
+  );
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
