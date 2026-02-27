@@ -7,6 +7,11 @@
     "core:default",
     "opener:default",
     "fs:default",
+    "fs:read-all",
+    {
+      "identifier": "fs:scope",
+      "allow": ["/**", "[A-Za-z]:/**"]
+    },
     "dialog:default",
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text",
