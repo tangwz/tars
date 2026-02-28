@@ -89,6 +89,8 @@ export function WorkspaceShell(props: WorkspaceShellProps) {
   return (
     <main className="workspace-layout">
       <aside className="workspace-sidebar">
+        <div aria-hidden="true" className="workspace-sidebar-titlebar" data-tauri-drag-region />
+
         <SectionHeader
           actions={
             <IconButton
@@ -102,6 +104,7 @@ export function WorkspaceShell(props: WorkspaceShellProps) {
               <FolderPlus className="workspace-action-icon" />
             </IconButton>
           }
+          actionsClassName="window-no-drag"
           className="workspace-sidebar-header"
           title={t(locale, "workspace.threadsTitle")}
         />

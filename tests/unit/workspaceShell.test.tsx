@@ -47,7 +47,7 @@ describe("WorkspaceShell", () => {
   it(
     "renders project groups and the phase one thread panel shell",
     () => {
-      render(
+      const { container } = render(
         <WorkspaceShell
           currentProjectPath="/tmp/tars"
           isAddingProject={false}
@@ -67,6 +67,10 @@ describe("WorkspaceShell", () => {
       expect(screen.getByText("GPT-5.3-Codex")).toBeInTheDocument();
       expect(screen.queryByText("右侧工作区暂未设计，后续将在这里展示会话内容。")).not.toBeInTheDocument();
       expect(screen.getByLabelText("添加项目")).toBeInTheDocument();
+      expect(container.querySelector(".workspace-sidebar-titlebar")).toHaveAttribute("data-tauri-drag-region");
+      expect(container.querySelector(".workspace-sidebar-header")).not.toHaveAttribute("data-tauri-drag-region");
+      expect(container.querySelector(".thread-panel-header")).toHaveAttribute("data-tauri-drag-region");
+      expect(container.querySelector(".thread-panel-actions")).toHaveClass("window-no-drag");
     },
     20_000,
   );

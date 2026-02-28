@@ -2,13 +2,19 @@
 @import "./tokens.css";
 @import "./components.css";
 
+.window-no-drag,
+.window-no-drag * {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
 .startup-root {
   position: relative;
   display: flex;
   min-height: 100vh;
   align-items: center;
   justify-content: center;
-  padding: 2.4rem 1.5rem;
+  padding: calc(1.2rem + var(--window-main-top-inset)) 1.5rem 2.4rem;
 }
 
 .startup-panel {
@@ -123,8 +129,14 @@
   flex-direction: column;
 }
 
+.workspace-sidebar-titlebar {
+  height: var(--window-sidebar-titlebar-height);
+  flex: none;
+  background: transparent;
+}
+
 .workspace-sidebar-header {
-  padding: 1.1rem 0.95rem 0.6rem;
+  padding: 0.5rem 0.95rem 0.5rem;
 }
 
 .workspace-sidebar-header .section-header-title {
@@ -393,24 +405,24 @@
 .workspace-main {
   min-height: 100vh;
   display: block;
-  padding: 20px 28px 14px;
+  padding: calc(6px + var(--window-main-top-inset)) 28px 14px;
   background: linear-gradient(180deg, rgb(249 249 250 / 48%), rgb(240 241 244 / 12%));
 }
 
 .thread-panel {
-  min-height: calc(100vh - 34px);
-  height: calc(100vh - 34px);
+  min-height: calc(100vh - 34px - var(--window-main-top-inset));
+  height: calc(100vh - 34px - var(--window-main-top-inset));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 .thread-panel-header {
-  min-height: 56px;
+  min-height: 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.9rem;
-  padding-bottom: 10px;
+  padding-bottom: 6px;
 }
 
 .thread-panel-title {
@@ -773,7 +785,7 @@
 
 .settings-sidebar {
   min-height: 100vh;
-  padding: 0.55rem 0.72rem;
+  padding: calc(0.35rem + var(--window-main-top-inset)) 0.72rem 0.55rem;
   border-right: 1px solid var(--divider-color);
   background: color-mix(in srgb, var(--surface-color) 86%, #d7e4ea);
 }
@@ -840,11 +852,11 @@
 
 .settings-main {
   min-width: 0;
-  padding: 2.6rem 3rem;
+  padding: calc(0.9rem + var(--window-main-top-inset)) 3rem 2.6rem;
 }
 
 .settings-header {
-  margin-bottom: 1.8rem;
+  margin-bottom: 1.3rem;
 }
 
 .settings-title {
@@ -992,12 +1004,12 @@
 
   .workspace-main {
     min-height: 0;
-    padding: 16px 20px 12px;
+    padding: calc(6px + var(--window-main-top-inset)) 20px 12px;
   }
 
   .thread-panel {
-    min-height: calc(100vh - 28px);
-    height: calc(100vh - 28px);
+    min-height: calc(100vh - 28px - var(--window-main-top-inset));
+    height: calc(100vh - 28px - var(--window-main-top-inset));
   }
 
   .thread-panel-header {
@@ -1042,7 +1054,7 @@
   }
 
   .settings-main {
-    padding: 1.2rem;
+    padding: calc(0.7rem + var(--window-main-top-inset)) 1.2rem 1.2rem;
   }
 }
 
@@ -1067,12 +1079,12 @@
   }
 
   .workspace-main {
-    padding: 12px;
+    padding: calc(4px + var(--window-main-top-inset)) 12px 12px;
   }
 
   .thread-panel {
-    min-height: calc(100vh - 24px);
-    height: calc(100vh - 24px);
+    min-height: calc(100vh - 24px - var(--window-main-top-inset));
+    height: calc(100vh - 24px - var(--window-main-top-inset));
   }
 
   .thread-panel-usage {

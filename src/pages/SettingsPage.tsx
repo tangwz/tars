@@ -184,7 +184,7 @@ export function SettingsPage() {
       </aside>
 
       <section className="settings-main">
-        <header className="settings-header">
+        <header className="settings-header" data-tauri-drag-region>
           <h1 className="settings-title">{t(locale, selectedSection.titleKey)}</h1>
         </header>
         {renderContent()}

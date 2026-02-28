@@ -1,4 +1,6 @@
 :root {
+  --window-main-top-inset: 0px;
+  --window-sidebar-titlebar-height: 0px;
   --bg-color: #f0f1f4;
   --fg-color: #1f2126;
   --panel-bg: #f7f8fa;
@@ -34,6 +36,11 @@
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.platform-macos-overlay-titlebar {
+  --window-main-top-inset: 8px;
+  --window-sidebar-titlebar-height: 34px;
 }
 
 .dark-theme {

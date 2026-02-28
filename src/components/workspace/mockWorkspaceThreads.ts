@@ -80,7 +80,7 @@ export function buildMockWorkspaceData(locale: Locale, projects: RecentProject[]
 
         detailsById[id] = {
           composer: {
-            draft: threadIndex === 0 ? t(locale, "workspace.thread.defaultDraft") : "",
+            draft: "",
             effort: threadIndex === 2 ? "medium" : "high",
             mode: threadIndex === 2 ? "chat" : "plan",
             model: threadIndex === 1 ? "GPT-5.3" : "GPT-5.3-Codex",

@@ -52,10 +52,10 @@ export function ThreadPanelHeader(props: ThreadPanelHeaderProps) {
   } = props;
 
   return (
-    <header className="thread-panel-header">
+    <header className="thread-panel-header" data-tauri-drag-region>
       <h2 className="thread-panel-title">{title}</h2>
 
-      <div className="thread-panel-actions">
+      <div className="thread-panel-actions window-no-drag">
         <div className="thread-panel-control">
           <button
             aria-label={`${t(locale, "workspace.thread.open")} ${getOpenTargetLabel(locale, openTarget)}`}

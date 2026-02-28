@@ -19,9 +19,14 @@ export function StartupScreen(props: StartupScreenProps) {
   return (
     <main className="startup-root">
       <section className="startup-panel">
-        <header className="startup-top-row">
+        <header className="startup-top-row" data-tauri-drag-region>
           <h1 className="startup-title">{t(locale, "startup.recentProjects")}</h1>
-          <button className="primary-button" disabled={props.isOpeningProject} onClick={props.onOpenProject} type="button">
+          <button
+            className="primary-button window-no-drag"
+            disabled={props.isOpeningProject}
+            onClick={props.onOpenProject}
+            type="button"
+          >
             <span className="primary-button-content">
               <FolderPlus className="button-icon" />
               <span>{props.isOpeningProject ? t(locale, "startup.openingProject") : t(locale, "startup.openProject")}</span>
@@ -64,4 +69,3 @@ export function StartupScreen(props: StartupScreenProps) {
     </main>
   );
 }
-
