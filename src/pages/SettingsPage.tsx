@@ -150,8 +150,10 @@ export function SettingsPage() {
   return (
     <main className="settings-layout">
       <aside className="settings-sidebar">
+        <div aria-hidden="true" className="settings-sidebar-titlebar" data-tauri-drag-region />
+
         <button
-          className="settings-back-button"
+          className="settings-back-button window-no-drag"
           onClick={() => {
             navigate(backTarget);
           }}

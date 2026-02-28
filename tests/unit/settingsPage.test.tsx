@@ -18,17 +18,18 @@ describe("SettingsPage", () => {
   });
 
   it("renders the split settings layout without a locale switcher", () => {
-      const { container } = render(
-        <MemoryRouter initialEntries={["/settings"]}>
-          <SettingsPage />
-        </MemoryRouter>,
-      );
+    const { container } = render(
+      <MemoryRouter initialEntries={["/settings"]}>
+        <SettingsPage />
+      </MemoryRouter>,
+    );
 
-      expect(container.textContent).toContain("Back to app");
-      expect(container.querySelector(".settings-title")?.textContent).toBe("General");
-      expect(screen.getByText("MCP Servers")).toBeInTheDocument();
-      expect(screen.queryByText("Simplified Chinese")).not.toBeInTheDocument();
-      expect(screen.queryByText("简体中文")).not.toBeInTheDocument();
-      expect(useLocaleStore.getState().locale).toBe("en");
+    expect(container.textContent).toContain("Back to app");
+    expect(container.querySelector(".settings-sidebar-titlebar")).toHaveAttribute("data-tauri-drag-region");
+    expect(container.querySelector(".settings-title")?.textContent).toBe("General");
+    expect(screen.getByText("MCP Servers")).toBeInTheDocument();
+    expect(screen.queryByText("Simplified Chinese")).not.toBeInTheDocument();
+    expect(screen.queryByText("简体中文")).not.toBeInTheDocument();
+    expect(useLocaleStore.getState().locale).toBe("en");
   });
 });
