@@ -15,7 +15,6 @@ import {
 import { useNavigate } from "react-router-dom";
 import { t } from "@/i18n/translate";
 import type { TranslationKey } from "@/i18n/messages";
-import type { Locale } from "@/i18n/types";
 import { localeSelectors, useLocaleStore } from "@/stores/localeStore";
 import { useWorkspaceStore, workspaceSelectors } from "@/stores/workspaceStore";
 
@@ -45,10 +44,6 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
   { id: "worktree", icon: FolderTree, titleKey: "settings.sectionWorktree" },
   { id: "archivedThreads", icon: Archive, titleKey: "settings.sectionArchivedThreads" },
 ];
-
-function getLocaleLabel(locale: Locale): TranslationKey {
-  return locale === "zh-CN" ? "workspace.languageSimplifiedChinese" : "workspace.languageEnglish";
-}
 
 export function SettingsPage() {
   const locale = useLocaleStore(localeSelectors.locale);
@@ -84,27 +79,6 @@ export function SettingsPage() {
             <p className="settings-row-description">{t(locale, "settings.defaultTargetDescription")}</p>
           </div>
           <div className="settings-pill">VS Code</div>
-        </div>
-
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <h2 className="settings-row-title">{t(locale, "workspace.language")}</h2>
-            <p className="settings-row-description">{t(locale, "settings.languageDescription")}</p>
-          </div>
-          <div className="settings-segmented-control" role="group">
-            {(["en", "zh-CN"] as const).map((nextLocale) => (
-              <button
-                className={`settings-segmented-option${locale === nextLocale ? " is-active" : ""}`}
-                key={nextLocale}
-                onClick={() => {
-                  useLocaleStore.getState().setLocale(nextLocale);
-                }}
-                type="button"
-              >
-                {t(locale, getLocaleLabel(nextLocale))}
-              </button>
-            ))}
-          </div>
         </div>
 
         <div className="settings-row">

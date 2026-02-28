@@ -349,6 +349,47 @@
   color: var(--muted-fg);
 }
 
+.workspace-settings-language-list {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.28rem 0 0;
+}
+
+.workspace-settings-language-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  padding: 0.72rem 0.68rem;
+  text-align: left;
+  font-size: 0.96rem;
+  font-weight: 520;
+  margin-left: 2.25rem;
+  width: calc(100% - 2.25rem);
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.workspace-settings-language-option:hover {
+  background: color-mix(in srgb, var(--row-hover-bg) 78%, transparent);
+}
+
+.workspace-settings-language-option.is-active {
+  background: color-mix(in srgb, var(--accent-soft) 72%, transparent);
+  color: var(--fg-color);
+}
+
+.workspace-settings-language-check {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+
 .workspace-main {
   min-height: 100vh;
   display: block;

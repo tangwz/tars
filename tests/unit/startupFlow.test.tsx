@@ -108,7 +108,7 @@ describe("startupFlow", () => {
       expect(mocks.setMeta).toHaveBeenCalledWith("last_project_path", "/tmp/workspace-alpha");
       await waitFor(
         () => {
-          expect(screen.getByText(t("en", "workspace.mainPlaceholder"))).toBeInTheDocument();
+          expect(screen.getByText(t("en", "workspace.thread.startBuilding"))).toBeInTheDocument();
         },
         { timeout: 15_000 },
       );
@@ -168,7 +168,7 @@ describe("startupFlow", () => {
 
       await waitFor(
         () => {
-          expect(screen.getByText(t("en", "workspace.mainPlaceholder"))).toBeInTheDocument();
+          expect(screen.getByText(t("en", "workspace.thread.startBuilding"))).toBeInTheDocument();
         },
         { timeout: 15_000 },
       );

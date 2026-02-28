@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it } from "vitest";
 import { SettingsPage } from "../../src/pages/SettingsPage";
@@ -17,21 +17,18 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("renders the split settings layout and switches locale", () => {
-    const { container } = render(
-      <MemoryRouter initialEntries={["/settings"]}>
-        <SettingsPage />
-      </MemoryRouter>,
-    );
+  it("renders the split settings layout without a locale switcher", () => {
+      const { container } = render(
+        <MemoryRouter initialEntries={["/settings"]}>
+          <SettingsPage />
+        </MemoryRouter>,
+      );
 
-    expect(container.textContent).toContain("Back to app");
-    expect(container.querySelector(".settings-title")?.textContent).toBe("General");
-    expect(screen.getByText("MCP Servers")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("Simplified Chinese"));
-
-    expect(useLocaleStore.getState().locale).toBe("zh-CN");
-    expect(container.textContent).toContain("返回应用");
-    expect(container.querySelector(".settings-title")?.textContent).toBe("常规");
+      expect(container.textContent).toContain("Back to app");
+      expect(container.querySelector(".settings-title")?.textContent).toBe("General");
+      expect(screen.getByText("MCP Servers")).toBeInTheDocument();
+      expect(screen.queryByText("Simplified Chinese")).not.toBeInTheDocument();
+      expect(screen.queryByText("简体中文")).not.toBeInTheDocument();
+      expect(useLocaleStore.getState().locale).toBe("en");
   });
 });

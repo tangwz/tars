@@ -1,7 +1,9 @@
-import { useEffect, useRef } from "react";
-import { ChevronRight, CircleUserRound, Globe, Settings } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, ChevronDown, ChevronRight, CircleUserRound, Globe, Settings } from "lucide-react";
+import { LOCALE_OPTIONS } from "@/i18n/localeOptions";
 import { t } from "@/i18n/translate";
 import type { Locale } from "@/i18n/types";
+import { useLocaleStore } from "@/stores/localeStore";
 import { MenuPanel } from "@/components/ui/MenuPanel";
 
 interface SettingsMenuProps {
@@ -15,9 +17,11 @@ interface SettingsMenuProps {
 export function SettingsMenu(props: SettingsMenuProps) {
   const { isOpen, locale, onClose, onOpenSettings, onToggle } = props;
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [isLanguageExpanded, setIsLanguageExpanded] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
+      setIsLanguageExpanded(false);
       return;
     }
 
@@ -82,9 +86,14 @@ export function SettingsMenu(props: SettingsMenuProps) {
             <ChevronRight className="workspace-settings-menu-arrow" />
           </button>
 
+          <div aria-hidden="true" className="workspace-settings-divider" />
+
           <button
+            aria-expanded={isLanguageExpanded}
             className="workspace-settings-menu-item"
-            onClick={onOpenSettings}
+            onClick={() => {
+              setIsLanguageExpanded((value) => !value);
+            }}
             role="menuitem"
             type="button"
           >
@@ -92,8 +101,37 @@ export function SettingsMenu(props: SettingsMenuProps) {
               <Globe className="workspace-settings-menu-icon" />
               <span>{t(locale, "workspace.language")}</span>
             </span>
-            <ChevronRight className="workspace-settings-menu-arrow" />
+            {isLanguageExpanded ? (
+              <ChevronDown className="workspace-settings-menu-arrow" />
+            ) : (
+              <ChevronRight className="workspace-settings-menu-arrow" />
+            )}
           </button>
+
+          {isLanguageExpanded ? (
+            <div className="workspace-settings-language-list">
+              {LOCALE_OPTIONS.map((option) => {
+                const isActive = locale === option.value;
+
+                return (
+                  <button
+                    aria-checked={isActive}
+                    className={`workspace-settings-language-option${isActive ? " is-active" : ""}`}
+                    key={option.value}
+                    onClick={() => {
+                      useLocaleStore.getState().setLocale(option.value);
+                      onClose();
+                    }}
+                    role="menuitemradio"
+                    type="button"
+                  >
+                    <span>{t(option.value, option.labelKey)}</span>
+                    {isActive ? <Check aria-hidden="true" className="workspace-settings-language-check" /> : null}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
         </MenuPanel>
       ) : null}
     </div>
