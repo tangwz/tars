@@ -12,7 +12,7 @@ describe("IconButton", () => {
       </IconButton>,
     );
 
-    const button = screen.getByRole("button", { name: "Add item" });
+    const button = screen.getByLabelText("Add item");
     fireEvent.click(button);
 
     expect(onClick).toHaveBeenCalledTimes(1);
@@ -27,8 +27,7 @@ describe("IconButton", () => {
       </IconButton>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Disabled item" }));
+    fireEvent.click(screen.getByLabelText("Disabled item"));
     expect(onClick).not.toHaveBeenCalled();
   });
 });
-

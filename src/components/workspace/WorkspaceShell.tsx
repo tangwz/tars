@@ -16,6 +16,7 @@ interface WorkspaceShellProps {
   recentProjects: RecentProject[];
   isAddingProject: boolean;
   onAddProject: () => Promise<void>;
+  onOpenSettings: () => void;
 }
 
 const THREAD_TITLE_KEYS: ThreadTitleKey[] = [
@@ -159,9 +160,12 @@ export function WorkspaceShell(props: WorkspaceShellProps) {
           <SettingsMenu
             isOpen={isSettingsOpen}
             locale={locale}
-            onSelectLocale={(nextLocale) => {
-              useLocaleStore.getState().setLocale(nextLocale);
+            onClose={() => {
               useUIStore.getState().setIsSettingsOpen(false);
+            }}
+            onOpenSettings={() => {
+              useUIStore.getState().setIsSettingsOpen(false);
+              props.onOpenSettings();
             }}
             onToggle={() => {
               useUIStore.getState().setIsSettingsOpen(!useUIStore.getState().isSettingsOpen);

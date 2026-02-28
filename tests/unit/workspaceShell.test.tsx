@@ -21,9 +21,11 @@ const recentProjects: RecentProject[] = [
 
 describe("WorkspaceShell", () => {
   const onAddProject = vi.fn(async () => undefined);
+  const onOpenSettings = vi.fn();
 
   beforeEach(() => {
     onAddProject.mockClear();
+    onOpenSettings.mockClear();
     useLocaleStore.setState({ locale: "en", isLocaleBootstrapped: true });
     useUIStore.setState({
       theme: "light",
@@ -49,6 +51,7 @@ describe("WorkspaceShell", () => {
           currentProjectPath="/tmp/tars"
           isAddingProject={false}
           onAddProject={onAddProject}
+          onOpenSettings={onOpenSettings}
           recentProjects={recentProjects}
         />,
       );
@@ -68,6 +71,7 @@ describe("WorkspaceShell", () => {
         currentProjectPath="/tmp/tars"
         isAddingProject={false}
         onAddProject={onAddProject}
+        onOpenSettings={onOpenSettings}
         recentProjects={recentProjects}
       />,
     );
@@ -79,22 +83,21 @@ describe("WorkspaceShell", () => {
     expect(threadButtons[1]).toHaveClass("is-active");
   });
 
-  it("switches locale from settings menu", () => {
+  it("opens settings from the footer menu", () => {
     render(
       <WorkspaceShell
         currentProjectPath="/tmp/tars"
         isAddingProject={false}
         onAddProject={onAddProject}
+        onOpenSettings={onOpenSettings}
         recentProjects={recentProjects}
       />,
     );
 
     fireEvent.click(screen.getByText("Settings"));
-    fireEvent.click(screen.getByText("Simplified Chinese"));
+    fireEvent.click(screen.getAllByText("Settings")[1]);
 
-    expect(screen.getByText("会话")).toBeInTheDocument();
-    expect(screen.getByText("设置")).toBeInTheDocument();
-    expect(useLocaleStore.getState().locale).toBe("zh-CN");
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 
   it(
@@ -105,6 +108,7 @@ describe("WorkspaceShell", () => {
           currentProjectPath="/tmp/tars"
           isAddingProject={false}
           onAddProject={onAddProject}
+          onOpenSettings={onOpenSettings}
           recentProjects={recentProjects}
         />,
       );
