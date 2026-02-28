@@ -1,14 +1,14 @@
 import { Folder } from "lucide-react";
 import type { RecentProject } from "@/services/persistence/projectRepository";
 import type { Locale } from "@/i18n/types";
-import { ThreadList, type WorkspaceThread } from "@/components/workspace/ThreadList";
+import { ThreadList, type WorkspaceThreadSummary } from "@/components/workspace/ThreadList";
 
 interface ProjectListProps {
   locale: Locale;
   projects: RecentProject[];
-  threadsByProject: Record<string, WorkspaceThread[]>;
+  threadsByProject: Record<string, WorkspaceThreadSummary[]>;
   selectedThreadId: string | null;
-  onSelectThread: (projectPath: string, thread: WorkspaceThread) => void;
+  onSelectThread: (projectPath: string, thread: WorkspaceThreadSummary) => void;
 }
 
 export function ProjectList(props: ProjectListProps) {
@@ -33,4 +33,3 @@ export function ProjectList(props: ProjectListProps) {
     </>
   );
 }
-

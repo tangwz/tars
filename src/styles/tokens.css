@@ -16,6 +16,14 @@
   --accent-bg: var(--button-bg);
   --accent-primary: var(--button-fg);
   --border-color: var(--panel-border);
+  --thread-surface: rgb(255 255 255 / 76%);
+  --thread-surface-strong: #ffffff;
+  --thread-border: rgb(208 213 221 / 92%);
+  --thread-muted: #7a7f87;
+  --thread-blue: #2563eb;
+  --thread-green: #14923d;
+  --thread-red: #cc3a32;
+  --thread-shadow: 0 18px 40px rgb(15 23 42 / 8%);
   font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
   font-size: 16px;
   line-height: 1.45;
@@ -46,6 +54,14 @@
   --accent-bg: var(--button-bg);
   --accent-primary: var(--button-fg);
   --border-color: var(--panel-border);
+  --thread-surface: rgb(24 26 31 / 84%);
+  --thread-surface-strong: #1b1f26;
+  --thread-border: rgb(58 63 73 / 100%);
+  --thread-muted: #8f97a4;
+  --thread-blue: #6ca6ff;
+  --thread-green: #67d88f;
+  --thread-red: #ff8b7f;
+  --thread-shadow: 0 18px 44px rgb(0 0 0 / 34%);
 }
 
 html,
@@ -68,4 +84,3 @@ button {
   font: inherit;
   color: inherit;
 }
-

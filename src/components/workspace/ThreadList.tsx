@@ -1,21 +1,17 @@
-import { t } from "@/i18n/translate";
-import type { TranslationKey } from "@/i18n/messages";
 import type { Locale } from "@/i18n/types";
 import { formatRelativeOpenedAt } from "@/lib/time/formatRelativeOpenedAt";
 
-export type ThreadTitleKey = Extract<TranslationKey, `workspace.mockThread.${string}`>;
-
-export interface WorkspaceThread {
+export interface WorkspaceThreadSummary {
   id: string;
-  titleKey: ThreadTitleKey;
+  title: string;
   openedAt: number;
 }
 
 interface ThreadListProps {
   locale: Locale;
   selectedThreadId: string | null;
-  threads: WorkspaceThread[];
-  onSelect: (thread: WorkspaceThread) => void;
+  threads: WorkspaceThreadSummary[];
+  onSelect: (thread: WorkspaceThreadSummary) => void;
 }
 
 export function ThreadList(props: ThreadListProps) {
@@ -33,7 +29,7 @@ export function ThreadList(props: ThreadListProps) {
               }}
               type="button"
             >
-              <span className="workspace-thread-title">{t(props.locale, thread.titleKey)}</span>
+              <span className="workspace-thread-title">{thread.title}</span>
               <span className="workspace-thread-time">
                 {formatRelativeOpenedAt(thread.openedAt, Date.now(), props.locale)}
               </span>
@@ -44,4 +40,3 @@ export function ThreadList(props: ThreadListProps) {
     </ul>
   );
 }
-

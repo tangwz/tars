@@ -9,7 +9,8 @@ import { IconButton } from "@/components/ui/IconButton";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ProjectList } from "@/components/workspace/ProjectList";
 import { SettingsMenu } from "@/components/workspace/SettingsMenu";
-import type { ThreadTitleKey, WorkspaceThread } from "@/components/workspace/ThreadList";
+import { ThreadPanel } from "@/components/workspace/ThreadPanel";
+import { buildMockWorkspaceData } from "@/components/workspace/mockWorkspaceThreads";
 
 interface WorkspaceShellProps {
   currentProjectPath: string;
@@ -19,53 +20,9 @@ interface WorkspaceShellProps {
   onOpenSettings: () => void;
 }
 
-const THREAD_TITLE_KEYS: ThreadTitleKey[] = [
-  "workspace.mockThread.fixDirectoryValidation",
-  "workspace.mockThread.initTauriStack",
-  "workspace.mockThread.planMvpTasks",
-  "workspace.mockThread.refactorMapView",
-  "workspace.mockThread.settingsSimplification",
-  "workspace.mockThread.releasePlan",
-];
-
-const THREAD_TIME_OFFSETS = [
-  12 * 60 * 1000,
-  18 * 60 * 60 * 1000,
-  5 * 24 * 60 * 60 * 1000,
-  7 * 24 * 60 * 60 * 1000,
-  14 * 24 * 60 * 60 * 1000,
-] as const;
-
 function getProjectName(path: string): string {
   const normalized = path.replace(/\\/g, "/").split("/").filter(Boolean);
   return normalized[normalized.length - 1] ?? path;
-}
-
-function hashPath(path: string): number {
-  let hash = 0;
-
-  for (let index = 0; index < path.length; index += 1) {
-    hash = (hash * 31 + path.charCodeAt(index)) >>> 0;
-  }
-
-  return hash;
-}
-
-function buildMockThreads(projectPath: string): WorkspaceThread[] {
-  const hash = hashPath(projectPath);
-  const threadCount = 3 + (hash % 3);
-  const now = Date.now();
-
-  return Array.from({ length: threadCount }, (_, index) => {
-    const titleKey = THREAD_TITLE_KEYS[(hash + index) % THREAD_TITLE_KEYS.length];
-    const offset = THREAD_TIME_OFFSETS[(hash + index) % THREAD_TIME_OFFSETS.length];
-
-    return {
-      id: `${projectPath}::thread-${index + 1}`,
-      titleKey,
-      openedAt: now - offset,
-    };
-  });
 }
 
 export function WorkspaceShell(props: WorkspaceShellProps) {
@@ -88,9 +45,7 @@ export function WorkspaceShell(props: WorkspaceShellProps) {
     ];
   }, [props.currentProjectPath, props.recentProjects]);
 
-  const threadsByProject = useMemo<Record<string, WorkspaceThread[]>>(() => {
-    return Object.fromEntries(projectSections.map((project) => [project.path, buildMockThreads(project.path)]));
-  }, [projectSections]);
+  const workspaceData = useMemo(() => buildMockWorkspaceData(locale, projectSections), [locale, projectSections]);
 
   useEffect(() => {
     const currentValue = useWorkspaceStore.getState().selectedProjectPath;
@@ -109,9 +64,17 @@ export function WorkspaceShell(props: WorkspaceShellProps) {
   }, [projectSections, props.currentProjectPath]);
 
   const activeThreads = useMemo(
-    () => (selectedProjectPath ? threadsByProject[selectedProjectPath] ?? [] : []),
-    [selectedProjectPath, threadsByProject],
+    () => (selectedProjectPath ? workspaceData.threadsByProject[selectedProjectPath] ?? [] : []),
+    [selectedProjectPath, workspaceData.threadsByProject],
   );
+
+  const selectedThreadDetail = useMemo(() => {
+    if (selectedThreadId) {
+      return workspaceData.detailsById[selectedThreadId] ?? null;
+    }
+
+    return activeThreads[0] ? workspaceData.detailsById[activeThreads[0].id] ?? null : null;
+  }, [activeThreads, selectedThreadId, workspaceData.detailsById]);
 
   useEffect(() => {
     const currentThreadId = useWorkspaceStore.getState().selectedThreadId;
@@ -152,7 +115,7 @@ export function WorkspaceShell(props: WorkspaceShellProps) {
             }}
             projects={projectSections}
             selectedThreadId={selectedThreadId}
-            threadsByProject={threadsByProject}
+            threadsByProject={workspaceData.threadsByProject}
           />
         </div>
 
@@ -175,9 +138,7 @@ export function WorkspaceShell(props: WorkspaceShellProps) {
       </aside>
 
       <section aria-label={t(locale, "workspace.mainPanelAria")} className="workspace-main">
-        <div className="workspace-main-placeholder">
-          <p>{t(locale, "workspace.mainPlaceholder")}</p>
-        </div>
+        {selectedThreadDetail ? <ThreadPanel detail={selectedThreadDetail} locale={locale} recentProjects={projectSections} /> : null}
       </section>
     </main>
   );
