@@ -19,26 +19,31 @@ export function StartupScreen(props: StartupScreenProps) {
   return (
     <main className="startup-root">
       <section className="startup-panel">
-        <header className="startup-top-row" data-tauri-drag-region>
-          <h1 className="startup-title">{t(locale, "startup.recentProjects")}</h1>
-          <button
-            className="primary-button window-no-drag"
-            disabled={props.isOpeningProject}
-            onClick={props.onOpenProject}
-            type="button"
-          >
-            <span className="primary-button-content">
-              <FolderPlus className="button-icon" />
-              <span>{props.isOpeningProject ? t(locale, "startup.openingProject") : t(locale, "startup.openProject")}</span>
-            </span>
-          </button>
-        </header>
+        <div className="startup-hero-row">
+          <header className="startup-title-region" data-tauri-drag-region>
+            <h1 className="startup-title">{t(locale, "startup.recentProjects")}</h1>
+          </header>
+
+          <aside className="startup-action-rail">
+            <button
+              className="primary-button startup-open-button window-no-drag"
+              disabled={props.isOpeningProject}
+              onClick={props.onOpenProject}
+              type="button"
+            >
+              <span className="primary-button-content startup-open-button-content">
+                <FolderPlus className="button-icon" />
+                <span className="startup-open-button-label">
+                  {props.isOpeningProject ? t(locale, "startup.openingProject") : t(locale, "startup.openProject")}
+                </span>
+              </span>
+            </button>
+
+            <p className="recent-limit">{t(locale, "startup.recentLimit", { count: props.recentProjects.length })}</p>
+          </aside>
+        </div>
 
         <section aria-label={t(locale, "startup.recentProjects")} className="recent-section">
-          <div className="recent-heading-row">
-            <p className="recent-limit">{t(locale, "startup.recentLimit", { count: props.recentProjects.length })}</p>
-          </div>
-
           {props.isLoading ? <p className="muted-text">{t(locale, "startup.loadingRecentProjects")}</p> : null}
 
           {!props.isLoading && props.recentProjects.length === 0 ? (
