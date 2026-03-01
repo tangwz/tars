@@ -173,13 +173,34 @@
   margin-top: 0.9rem;
 }
 
-.workspace-project-name {
+.workspace-project-heading {
   margin: 0;
+}
+
+.workspace-project-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  border-radius: 14px;
   padding: 0.46rem 0.6rem 0.32rem;
   font-size: 0.82rem;
   font-weight: 520;
   color: color-mix(in srgb, var(--fg-color) 76%, var(--muted-fg));
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  text-align: left;
+  transition: background-color 140ms ease;
+}
+
+.workspace-project-toggle:hover {
+  background: color-mix(in srgb, var(--row-hover-bg) 72%, transparent);
+}
+
+.workspace-project-toggle-main {
+  min-width: 0;
+  display: inline-flex;
   align-items: center;
   gap: 0.45rem;
 }
@@ -188,6 +209,13 @@
   width: 1.05rem;
   height: 1.05rem;
   flex: none;
+}
+
+.workspace-project-chevron {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: none;
+  color: var(--muted-fg);
 }
 
 .workspace-project-name-text {

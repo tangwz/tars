@@ -1,6 +1,7 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FolderPlus } from "lucide-react";
 import { t } from "@/i18n/translate";
+import { getMeta, setMeta } from "@/services/persistence/projectRepository";
 import { type RecentProject } from "@/services/persistence/projectRepository";
 import { localeSelectors, useLocaleStore } from "@/stores/localeStore";
 import { uiSelectors, useUIStore } from "@/stores/uiStore";
@@ -20,13 +21,34 @@ interface WorkspaceShellProps {
   onOpenSettings: () => void;
 }
 
+const WORKSPACE_COLLAPSED_PROJECTS_META_KEY = "workspace_collapsed_project_paths";
+
 function getProjectName(path: string): string {
   const normalized = path.replace(/\\/g, "/").split("/").filter(Boolean);
   return normalized[normalized.length - 1] ?? path;
 }
 
+function parseCollapsedProjectPaths(value: string | null): string[] {
+  if (!value) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter((item): item is string => typeof item === "string");
+  } catch {
+    return [];
+  }
+}
+
 export function WorkspaceShell(props: WorkspaceShellProps) {
   const locale = useLocaleStore(localeSelectors.locale);
+  const isDatabaseReady = useWorkspaceStore(workspaceSelectors.isDatabaseReady);
   const selectedProjectPath = useWorkspaceStore(workspaceSelectors.selectedProjectPath);
   const selectedThreadId = useWorkspaceStore(workspaceSelectors.selectedThreadId);
   const isSettingsOpen = useUIStore(uiSelectors.isSettingsOpen);
@@ -44,8 +66,74 @@ export function WorkspaceShell(props: WorkspaceShellProps) {
       },
     ];
   }, [props.currentProjectPath, props.recentProjects]);
+  const [expandedProjectsByPath, setExpandedProjectsByPath] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(projectSections.map((project) => [project.path, true])),
+  );
+  const [isCollapseStateBootstrapped, setIsCollapseStateBootstrapped] = useState(false);
+  const hasUserToggledProjectsRef = useRef(false);
 
   const workspaceData = useMemo(() => buildMockWorkspaceData(locale, projectSections), [locale, projectSections]);
+
+  useEffect(() => {
+    setExpandedProjectsByPath((current) => {
+      const next = Object.fromEntries(projectSections.map((project) => [project.path, current[project.path] ?? true]));
+      const hasChanged =
+        Object.keys(current).length !== Object.keys(next).length ||
+        projectSections.some((project) => current[project.path] !== next[project.path]);
+
+      return hasChanged ? next : current;
+    });
+  }, [projectSections]);
+
+  useEffect(() => {
+    if (!isDatabaseReady || isCollapseStateBootstrapped) {
+      return;
+    }
+
+    let active = true;
+
+    const bootstrapCollapsedProjects = async () => {
+      try {
+        const savedValue = await getMeta(WORKSPACE_COLLAPSED_PROJECTS_META_KEY);
+
+        if (!active) {
+          return;
+        }
+
+        if (!hasUserToggledProjectsRef.current) {
+          const collapsedProjectPaths = new Set(parseCollapsedProjectPaths(savedValue));
+
+          setExpandedProjectsByPath(() =>
+            Object.fromEntries(projectSections.map((project) => [project.path, !collapsedProjectPaths.has(project.path)])),
+          );
+        }
+
+        setIsCollapseStateBootstrapped(true);
+      } catch (error) {
+        useUIStore.getState().setStartupError(error instanceof Error ? error.message : String(error));
+      }
+    };
+
+    void bootstrapCollapsedProjects();
+
+    return () => {
+      active = false;
+    };
+  }, [isCollapseStateBootstrapped, isDatabaseReady, projectSections]);
+
+  useEffect(() => {
+    if (!isDatabaseReady || !isCollapseStateBootstrapped) {
+      return;
+    }
+
+    const collapsedProjectPaths = projectSections
+      .filter((project) => expandedProjectsByPath[project.path] === false)
+      .map((project) => project.path);
+
+    void setMeta(WORKSPACE_COLLAPSED_PROJECTS_META_KEY, JSON.stringify(collapsedProjectPaths)).catch((error) => {
+      useUIStore.getState().setStartupError(error instanceof Error ? error.message : String(error));
+    });
+  }, [expandedProjectsByPath, isCollapseStateBootstrapped, isDatabaseReady, projectSections]);
 
   useEffect(() => {
     const currentValue = useWorkspaceStore.getState().selectedProjectPath;
@@ -111,10 +199,18 @@ export function WorkspaceShell(props: WorkspaceShellProps) {
 
         <div className="workspace-thread-scroll">
           <ProjectList
+            expandedProjectsByPath={expandedProjectsByPath}
             locale={locale}
             onSelectThread={(projectPath, thread) => {
               useWorkspaceStore.getState().setSelectedProjectPath(projectPath);
               useWorkspaceStore.getState().setSelectedThreadId(thread.id);
+            }}
+            onToggleProject={(projectPath) => {
+              hasUserToggledProjectsRef.current = true;
+              setExpandedProjectsByPath((current) => ({
+                ...current,
+                [projectPath]: !(current[projectPath] ?? true),
+              }));
             }}
             projects={projectSections}
             selectedThreadId={selectedThreadId}

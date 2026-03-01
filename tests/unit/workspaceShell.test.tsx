@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { WorkspaceShell } from "../../src/components/workspace/WorkspaceShell";
@@ -6,6 +6,23 @@ import { useLocaleStore } from "../../src/stores/localeStore";
 import { useUIStore } from "../../src/stores/uiStore";
 import { useWorkspaceStore } from "../../src/stores/workspaceStore";
 import type { RecentProject } from "../../src/services/persistence/projectRepository";
+
+const mocks = vi.hoisted(() => ({
+  getMeta: vi.fn(),
+  setMeta: vi.fn(),
+}));
+
+vi.mock("@/services/persistence/projectRepository", async () => {
+  const actual = await vi.importActual<typeof import("@/services/persistence/projectRepository")>(
+    "@/services/persistence/projectRepository",
+  );
+
+  return {
+    ...actual,
+    getMeta: mocks.getMeta,
+    setMeta: mocks.setMeta,
+  };
+});
 
 const recentProjects: RecentProject[] = [
   {
@@ -24,9 +41,23 @@ describe("WorkspaceShell", () => {
   const onAddProject = vi.fn(async () => undefined);
   const onOpenSettings = vi.fn();
 
+  function getProjectToggle(container: HTMLElement, projectName: string): HTMLButtonElement {
+    const toggle = Array.from(container.querySelectorAll<HTMLButtonElement>(".workspace-project-toggle")).find((button) =>
+      button.textContent?.includes(projectName),
+    );
+
+    if (!toggle) {
+      throw new Error(`Missing project toggle for ${projectName}`);
+    }
+
+    return toggle;
+  }
+
   beforeEach(() => {
     onAddProject.mockClear();
     onOpenSettings.mockClear();
+    mocks.getMeta.mockResolvedValue(null);
+    mocks.setMeta.mockResolvedValue(undefined);
     useLocaleStore.setState({ locale: "zh-CN", isLocaleBootstrapped: true });
     useUIStore.setState({
       theme: "light",
@@ -74,6 +105,158 @@ describe("WorkspaceShell", () => {
     },
     20_000,
   );
+
+  it("expands all project groups by default", () => {
+    const { container } = render(
+      <WorkspaceShell
+        currentProjectPath="/tmp/tars"
+        isAddingProject={false}
+        onAddProject={onAddProject}
+        onOpenSettings={onOpenSettings}
+        recentProjects={recentProjects}
+      />,
+    );
+
+    expect(getProjectToggle(container, "tars")).toHaveAttribute("aria-expanded", "true");
+    expect(getProjectToggle(container, "corobase")).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("规划 MVP 任务与 Agent 流程")).toBeInTheDocument();
+    expect(screen.getByText("实现地图渲染重构方案")).toBeInTheDocument();
+  });
+
+  it("collapses and re-expands a project's thread list", () => {
+    const { container } = render(
+      <WorkspaceShell
+        currentProjectPath="/tmp/tars"
+        isAddingProject={false}
+        onAddProject={onAddProject}
+        onOpenSettings={onOpenSettings}
+        recentProjects={recentProjects}
+      />,
+    );
+
+    const corobaseToggle = getProjectToggle(container, "corobase");
+
+    fireEvent.click(corobaseToggle);
+
+    expect(corobaseToggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("实现地图渲染重构方案")).not.toBeInTheDocument();
+    expect(screen.getByText("规划 MVP 任务与 Agent 流程")).toBeInTheDocument();
+
+    fireEvent.click(corobaseToggle);
+
+    expect(corobaseToggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("实现地图渲染重构方案")).toBeInTheDocument();
+  });
+
+  it("restores persisted collapsed project groups from app meta", async () => {
+    mocks.getMeta.mockResolvedValueOnce(JSON.stringify(["/tmp/corobase"]));
+
+    const { container } = render(
+      <WorkspaceShell
+        currentProjectPath="/tmp/tars"
+        isAddingProject={false}
+        onAddProject={onAddProject}
+        onOpenSettings={onOpenSettings}
+        recentProjects={recentProjects}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(getProjectToggle(container, "corobase")).toHaveAttribute("aria-expanded", "false");
+    });
+
+    expect(screen.queryByText("实现地图渲染重构方案")).not.toBeInTheDocument();
+    expect(getProjectToggle(container, "tars")).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("keeps the right panel detail when collapsing the selected project's thread list", () => {
+    const { container } = render(
+      <WorkspaceShell
+        currentProjectPath="/tmp/tars"
+        isAddingProject={false}
+        onAddProject={onAddProject}
+        onOpenSettings={onOpenSettings}
+        recentProjects={recentProjects}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("简化目标设置区域布局"));
+    expect(screen.getByText("简化目标设置区域布局", { selector: ".thread-panel-title" })).toBeInTheDocument();
+
+    fireEvent.click(getProjectToggle(container, "corobase"));
+
+    expect(screen.queryByText("实现地图渲染重构方案")).not.toBeInTheDocument();
+    expect(screen.getByText("简化目标设置区域布局", { selector: ".thread-panel-title" })).toBeInTheDocument();
+  });
+
+  it("defaults newly added projects to expanded on rerender", () => {
+    const { container, rerender } = render(
+      <WorkspaceShell
+        currentProjectPath="/tmp/tars"
+        isAddingProject={false}
+        onAddProject={onAddProject}
+        onOpenSettings={onOpenSettings}
+        recentProjects={recentProjects}
+      />,
+    );
+
+    fireEvent.click(getProjectToggle(container, "corobase"));
+    expect(getProjectToggle(container, "corobase")).toHaveAttribute("aria-expanded", "false");
+
+    const nextProjects: RecentProject[] = [
+      ...recentProjects,
+      {
+        path: "/tmp/craft",
+        name: "craft",
+        openedAt: Date.now() - 60_000,
+      },
+    ];
+
+    rerender(
+      <WorkspaceShell
+        currentProjectPath="/tmp/tars"
+        isAddingProject={false}
+        onAddProject={onAddProject}
+        onOpenSettings={onOpenSettings}
+        recentProjects={nextProjects}
+      />,
+    );
+
+    expect(getProjectToggle(container, "corobase")).toHaveAttribute("aria-expanded", "false");
+    expect(getProjectToggle(container, "craft")).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("修复项目目录校验问题")).toBeInTheDocument();
+  });
+
+  it("persists collapsed project paths when toggled", async () => {
+    const { container } = render(
+      <WorkspaceShell
+        currentProjectPath="/tmp/tars"
+        isAddingProject={false}
+        onAddProject={onAddProject}
+        onOpenSettings={onOpenSettings}
+        recentProjects={recentProjects}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mocks.setMeta).toHaveBeenCalledWith("workspace_collapsed_project_paths", JSON.stringify([]));
+    });
+
+    fireEvent.click(getProjectToggle(container, "corobase"));
+
+    await waitFor(() => {
+      expect(mocks.setMeta).toHaveBeenCalledWith(
+        "workspace_collapsed_project_paths",
+        JSON.stringify(["/tmp/corobase"]),
+      );
+    });
+
+    fireEvent.click(getProjectToggle(container, "corobase"));
+
+    await waitFor(() => {
+      expect(mocks.setMeta).toHaveBeenCalledWith("workspace_collapsed_project_paths", JSON.stringify([]));
+    });
+  });
 
   it("updates active thread style and the thread panel title on click", () => {
     const { container } = render(
