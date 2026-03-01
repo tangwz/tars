@@ -188,6 +188,7 @@ describe("WorkspaceShell", () => {
       expect(screen.getByRole("button", { name: "提交 自动" })).toBeInTheDocument();
 
       fireEvent.click(screen.getByRole("button", { name: /GPT-5.3-Codex/i }));
+      expect(screen.getByRole("menu", { name: "模型菜单" })).toHaveClass("thread-composer-menu");
       fireEvent.click(screen.getByText("GPT-4.1"));
       expect(screen.getByRole("button", { name: /GPT-4.1/i })).toBeInTheDocument();
 
