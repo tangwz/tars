@@ -1,11 +1,13 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { RuntimeSelectionModal } from "../../src/components/runtime/RuntimeSelectionModal";
 import { WorkspaceShell } from "../../src/components/workspace/WorkspaceShell";
+import type { RecentProject } from "../../src/services/persistence/projectRepository";
 import { useLocaleStore } from "../../src/stores/localeStore";
+import { useRuntimeStore } from "../../src/stores/runtimeStore";
 import { useUIStore } from "../../src/stores/uiStore";
 import { useWorkspaceStore } from "../../src/stores/workspaceStore";
-import type { RecentProject } from "../../src/services/persistence/projectRepository";
 
 const mocks = vi.hoisted(() => ({
   getMeta: vi.fn(),
@@ -41,6 +43,21 @@ describe("WorkspaceShell", () => {
   const onAddProject = vi.fn(async () => undefined);
   const onOpenSettings = vi.fn();
 
+  function renderWorkspaceShell(projects = recentProjects) {
+    return render(
+      <>
+        <WorkspaceShell
+          currentProjectPath="/tmp/tars"
+          isAddingProject={false}
+          onAddProject={onAddProject}
+          onOpenSettings={onOpenSettings}
+          recentProjects={projects}
+        />
+        <RuntimeSelectionModal />
+      </>,
+    );
+  }
+
   function getProjectToggle(container: HTMLElement, projectName: string): HTMLButtonElement {
     const toggle = Array.from(container.querySelectorAll<HTMLButtonElement>(".workspace-project-toggle")).find((button) =>
       button.textContent?.includes(projectName),
@@ -65,6 +82,19 @@ describe("WorkspaceShell", () => {
       isLoadingRecent: false,
       isOpeningProject: false,
       isSettingsOpen: false,
+      runtimeModal: {
+        isOpen: false,
+        threadId: null,
+        selectedRuntimeId: null,
+        filter: "all",
+        isVerifying: false,
+        errorMessage: "",
+      },
+    });
+    useRuntimeStore.setState({
+      isRuntimeBootstrapped: true,
+      defaultRuntimeId: null,
+      authMetadataById: {},
     });
     useWorkspaceStore.setState({
       currentProjectPath: "/tmp/tars",
@@ -72,21 +102,14 @@ describe("WorkspaceShell", () => {
       selectedProjectPath: null,
       selectedThreadId: null,
       isDatabaseReady: true,
+      threadRuntimeOverridesById: {},
     });
   });
 
   it(
     "renders project groups and the phase one thread panel shell",
     () => {
-      const { container } = render(
-        <WorkspaceShell
-          currentProjectPath="/tmp/tars"
-          isAddingProject={false}
-          onAddProject={onAddProject}
-          onOpenSettings={onOpenSettings}
-          recentProjects={recentProjects}
-        />,
-      );
+      const { container } = renderWorkspaceShell();
 
       expect(screen.getByText("会话")).toBeInTheDocument();
       expect(screen.getByText("tars", { selector: ".workspace-project-name-text" })).toBeInTheDocument();
@@ -95,7 +118,7 @@ describe("WorkspaceShell", () => {
       expect(screen.getByText("新线程", { selector: ".thread-panel-title" })).toBeInTheDocument();
       expect(screen.getByText("开始构建")).toBeInTheDocument();
       expect(screen.getByText("完全访问权限")).toBeInTheDocument();
-      expect(screen.getByText("GPT-5.3-Codex")).toBeInTheDocument();
+      expect(screen.getByText("Codex")).toBeInTheDocument();
       expect(screen.queryByText("右侧工作区暂未设计，后续将在这里展示会话内容。")).not.toBeInTheDocument();
       expect(screen.getByLabelText("添加项目")).toBeInTheDocument();
       expect(container.querySelector(".workspace-sidebar-titlebar")).toHaveAttribute("data-tauri-drag-region");
@@ -107,15 +130,7 @@ describe("WorkspaceShell", () => {
   );
 
   it("expands all project groups by default", () => {
-    const { container } = render(
-      <WorkspaceShell
-        currentProjectPath="/tmp/tars"
-        isAddingProject={false}
-        onAddProject={onAddProject}
-        onOpenSettings={onOpenSettings}
-        recentProjects={recentProjects}
-      />,
-    );
+    const { container } = renderWorkspaceShell();
 
     expect(getProjectToggle(container, "tars")).toHaveAttribute("aria-expanded", "true");
     expect(getProjectToggle(container, "corobase")).toHaveAttribute("aria-expanded", "true");
@@ -124,15 +139,7 @@ describe("WorkspaceShell", () => {
   });
 
   it("collapses and re-expands a project's thread list", () => {
-    const { container } = render(
-      <WorkspaceShell
-        currentProjectPath="/tmp/tars"
-        isAddingProject={false}
-        onAddProject={onAddProject}
-        onOpenSettings={onOpenSettings}
-        recentProjects={recentProjects}
-      />,
-    );
+    const { container } = renderWorkspaceShell();
 
     const corobaseToggle = getProjectToggle(container, "corobase");
 
@@ -151,15 +158,7 @@ describe("WorkspaceShell", () => {
   it("restores persisted collapsed project groups from app meta", async () => {
     mocks.getMeta.mockResolvedValueOnce(JSON.stringify(["/tmp/corobase"]));
 
-    const { container } = render(
-      <WorkspaceShell
-        currentProjectPath="/tmp/tars"
-        isAddingProject={false}
-        onAddProject={onAddProject}
-        onOpenSettings={onOpenSettings}
-        recentProjects={recentProjects}
-      />,
-    );
+    const { container } = renderWorkspaceShell();
 
     await waitFor(() => {
       expect(getProjectToggle(container, "corobase")).toHaveAttribute("aria-expanded", "false");
@@ -170,15 +169,7 @@ describe("WorkspaceShell", () => {
   });
 
   it("keeps the right panel detail when collapsing the selected project's thread list", () => {
-    const { container } = render(
-      <WorkspaceShell
-        currentProjectPath="/tmp/tars"
-        isAddingProject={false}
-        onAddProject={onAddProject}
-        onOpenSettings={onOpenSettings}
-        recentProjects={recentProjects}
-      />,
-    );
+    const { container } = renderWorkspaceShell();
 
     fireEvent.click(screen.getByText("简化目标设置区域布局"));
     expect(screen.getByText("简化目标设置区域布局", { selector: ".thread-panel-title" })).toBeInTheDocument();
@@ -190,15 +181,7 @@ describe("WorkspaceShell", () => {
   });
 
   it("defaults newly added projects to expanded on rerender", () => {
-    const { container, rerender } = render(
-      <WorkspaceShell
-        currentProjectPath="/tmp/tars"
-        isAddingProject={false}
-        onAddProject={onAddProject}
-        onOpenSettings={onOpenSettings}
-        recentProjects={recentProjects}
-      />,
-    );
+    const { container, rerender } = renderWorkspaceShell();
 
     fireEvent.click(getProjectToggle(container, "corobase"));
     expect(getProjectToggle(container, "corobase")).toHaveAttribute("aria-expanded", "false");
@@ -213,13 +196,16 @@ describe("WorkspaceShell", () => {
     ];
 
     rerender(
-      <WorkspaceShell
-        currentProjectPath="/tmp/tars"
-        isAddingProject={false}
-        onAddProject={onAddProject}
-        onOpenSettings={onOpenSettings}
-        recentProjects={nextProjects}
-      />,
+      <>
+        <WorkspaceShell
+          currentProjectPath="/tmp/tars"
+          isAddingProject={false}
+          onAddProject={onAddProject}
+          onOpenSettings={onOpenSettings}
+          recentProjects={nextProjects}
+        />
+        <RuntimeSelectionModal />
+      </>,
     );
 
     expect(getProjectToggle(container, "corobase")).toHaveAttribute("aria-expanded", "false");
@@ -228,15 +214,7 @@ describe("WorkspaceShell", () => {
   });
 
   it("persists collapsed project paths when toggled", async () => {
-    const { container } = render(
-      <WorkspaceShell
-        currentProjectPath="/tmp/tars"
-        isAddingProject={false}
-        onAddProject={onAddProject}
-        onOpenSettings={onOpenSettings}
-        recentProjects={recentProjects}
-      />,
-    );
+    const { container } = renderWorkspaceShell();
 
     await waitFor(() => {
       expect(mocks.setMeta).toHaveBeenCalledWith("workspace_collapsed_project_paths", JSON.stringify([]));
@@ -259,15 +237,7 @@ describe("WorkspaceShell", () => {
   });
 
   it("updates active thread style and the thread panel title on click", () => {
-    const { container } = render(
-      <WorkspaceShell
-        currentProjectPath="/tmp/tars"
-        isAddingProject={false}
-        onAddProject={onAddProject}
-        onOpenSettings={onOpenSettings}
-        recentProjects={recentProjects}
-      />,
-    );
+    const { container } = renderWorkspaceShell();
     const threadButtons = Array.from(container.querySelectorAll<HTMLButtonElement>(".workspace-thread-item"));
     expect(threadButtons.length).toBeGreaterThan(1);
 
@@ -278,15 +248,7 @@ describe("WorkspaceShell", () => {
   });
 
   it("opens settings from the footer menu", () => {
-    render(
-      <WorkspaceShell
-        currentProjectPath="/tmp/tars"
-        isAddingProject={false}
-        onAddProject={onAddProject}
-        onOpenSettings={onOpenSettings}
-        recentProjects={recentProjects}
-      />,
-    );
+    renderWorkspaceShell();
 
     fireEvent.click(screen.getByText("设置"));
     fireEvent.click(screen.getAllByText("设置")[1]);
@@ -297,15 +259,7 @@ describe("WorkspaceShell", () => {
   it(
     "expands language options in the footer menu and switches locale",
     () => {
-      render(
-        <WorkspaceShell
-          currentProjectPath="/tmp/tars"
-          isAddingProject={false}
-          onAddProject={onAddProject}
-          onOpenSettings={onOpenSettings}
-          recentProjects={recentProjects}
-        />,
-      );
+      renderWorkspaceShell();
 
       fireEvent.click(screen.getByText("设置"));
 
@@ -350,17 +304,9 @@ describe("WorkspaceShell", () => {
   );
 
   it(
-    "switches the right panel dropdown controls",
-    () => {
-      render(
-        <WorkspaceShell
-          currentProjectPath="/tmp/tars"
-          isAddingProject={false}
-          onAddProject={onAddProject}
-          onOpenSettings={onOpenSettings}
-          recentProjects={recentProjects}
-        />,
-      );
+    "switches the right panel controls and opens the runtime dialog",
+    async () => {
+      renderWorkspaceShell();
 
       fireEvent.click(screen.getByRole("button", { name: "打开 VS Code" }));
       fireEvent.click(screen.getByText("默认应用"));
@@ -370,10 +316,22 @@ describe("WorkspaceShell", () => {
       fireEvent.click(screen.getByText("自动"));
       expect(screen.getByRole("button", { name: "提交 自动" })).toBeInTheDocument();
 
-      fireEvent.click(screen.getByRole("button", { name: /GPT-5.3-Codex/i }));
-      expect(screen.getByRole("menu", { name: "模型菜单" })).toHaveClass("thread-composer-menu");
-      fireEvent.click(screen.getByText("GPT-4.1"));
-      expect(screen.getByRole("button", { name: /GPT-4.1/i })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: /^Codex$/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole("dialog", { name: "选择 Runtime" })).toBeInTheDocument();
+      });
+
+      expect(screen.getByText("KIMI")).toBeInTheDocument();
+      expect(screen.queryByText("当前线程")).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("tab", { name: "LLM" }));
+      expect(screen.queryByText("gemini cli")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByText("KIMI"));
+      expect(screen.getByText("连接 Runtime")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "关闭 Runtime 选择器" }));
+      expect(screen.queryByRole("dialog", { name: "选择 Runtime" })).not.toBeInTheDocument();
 
       fireEvent.click(screen.getByRole("button", { name: /^高$/i }));
       fireEvent.click(screen.getByText("中"));
@@ -386,17 +344,47 @@ describe("WorkspaceShell", () => {
     30_000,
   );
 
-  it("keeps the send button disabled in phase one", () => {
-    render(
-      <WorkspaceShell
-        currentProjectPath="/tmp/tars"
-        isAddingProject={false}
-        onAddProject={onAddProject}
-        onOpenSettings={onOpenSettings}
-        recentProjects={recentProjects}
-      />,
-    );
+  it(
+    "authorizes a runtime with api key and updates the thread runtime button",
+    async () => {
+      mockIPC((command, payload) => {
+        if (command === "store_runtime_secret") {
+          expect(payload).toEqual({
+            payload: JSON.stringify({ apiKey: "sk-test-12345678", type: "apiKey" }),
+            runtimeId: "kimi",
+          });
+          return null;
+        }
 
+        return undefined;
+      });
+
+      renderWorkspaceShell();
+
+      fireEvent.click(screen.getByRole("button", { name: /^Codex$/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole("dialog", { name: "选择 Runtime" })).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("KIMI"));
+      fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "sk-test-12345678" } });
+      fireEvent.click(screen.getByRole("button", { name: "校验并连接" }));
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /^KIMI$/i })).toBeInTheDocument();
+      });
+
+      expect(mocks.setMeta).toHaveBeenCalledWith(
+        "runtime_auth_metadata_v1",
+        expect.stringContaining("\"runtimeId\":\"kimi\""),
+      );
+    },
+    20_000,
+  );
+
+  it("keeps the send button disabled in phase one", () => {
+    renderWorkspaceShell();
     expect(screen.getByLabelText("发送")).toBeDisabled();
   });
 
@@ -407,31 +395,14 @@ describe("WorkspaceShell", () => {
       return undefined;
     });
 
-    render(
-      <WorkspaceShell
-        currentProjectPath="/tmp/tars"
-        isAddingProject={false}
-        onAddProject={onAddProject}
-        onOpenSettings={onOpenSettings}
-        recentProjects={recentProjects}
-      />,
-    );
-
+    renderWorkspaceShell();
     fireEvent.click(screen.getByLabelText("复制线程标题"));
   });
 
   it(
     "triggers add project callback from header action",
     () => {
-      render(
-        <WorkspaceShell
-          currentProjectPath="/tmp/tars"
-          isAddingProject={false}
-          onAddProject={onAddProject}
-          onOpenSettings={onOpenSettings}
-          recentProjects={recentProjects}
-        />,
-      );
+      renderWorkspaceShell();
 
       fireEvent.click(screen.getByLabelText("添加项目"));
       expect(onAddProject).toHaveBeenCalledTimes(1);

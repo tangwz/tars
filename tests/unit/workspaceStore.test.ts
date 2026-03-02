@@ -9,6 +9,7 @@ describe("workspaceStore", () => {
       selectedProjectPath: null,
       selectedThreadId: null,
       isDatabaseReady: false,
+      threadRuntimeOverridesById: {},
     });
   });
 
@@ -27,5 +28,12 @@ describe("workspaceStore", () => {
     expect(useWorkspaceStore.getState().selectedProjectPath).toBe("/tmp/a");
     expect(useWorkspaceStore.getState().selectedThreadId).toBe("thread-1");
   });
-});
 
+  it("stores thread runtime overrides", () => {
+    useWorkspaceStore.getState().setThreadRuntimeOverride("thread-1", "codex");
+    expect(useWorkspaceStore.getState().threadRuntimeOverridesById["thread-1"]).toBe("codex");
+
+    useWorkspaceStore.getState().clearThreadRuntimeOverride("thread-1");
+    expect(useWorkspaceStore.getState().threadRuntimeOverridesById["thread-1"]).toBeUndefined();
+  });
+});

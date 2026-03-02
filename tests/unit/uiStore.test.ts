@@ -9,6 +9,14 @@ describe("uiStore", () => {
       isLoadingRecent: true,
       isOpeningProject: false,
       isSettingsOpen: false,
+      runtimeModal: {
+        isOpen: false,
+        threadId: null,
+        selectedRuntimeId: null,
+        filter: "all",
+        isVerifying: false,
+        errorMessage: "",
+      },
     });
   });
 
@@ -26,5 +34,13 @@ describe("uiStore", () => {
     useUIStore.getState().setStartupError("boom");
     expect(useUIStore.getState().startupError).toBe("boom");
   });
-});
 
+  it("opens and closes the runtime modal", () => {
+    useUIStore.getState().openRuntimeModal({ threadId: "thread-1", selectedRuntimeId: "codex" });
+    expect(useUIStore.getState().runtimeModal.isOpen).toBe(true);
+    expect(useUIStore.getState().runtimeModal.threadId).toBe("thread-1");
+
+    useUIStore.getState().closeRuntimeModal();
+    expect(useUIStore.getState().runtimeModal.isOpen).toBe(false);
+  });
+});

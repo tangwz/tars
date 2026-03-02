@@ -5,18 +5,18 @@ import { t } from "@/i18n/translate";
 import type { Locale } from "@/i18n/types";
 import type { ThreadComposerPreset } from "@/components/workspace/mockWorkspaceThreads";
 
-export type ThreadComposerMenuId = "effort" | "mode" | "model" | null;
+export type ThreadComposerMenuId = "effort" | "mode" | null;
 
 interface ThreadComposerProps {
   draft: string;
   effort: ThreadComposerPreset["effort"];
   locale: Locale;
   mode: ThreadComposerPreset["mode"];
-  model: ThreadComposerPreset["model"];
+  runtimeLabel: string;
   onChangeDraft: (value: string) => void;
   onSelectEffort: (value: ThreadComposerPreset["effort"]) => void;
   onSelectMode: (value: ThreadComposerPreset["mode"]) => void;
-  onSelectModel: (value: ThreadComposerPreset["model"]) => void;
+  onOpenRuntimeModal: () => void;
   onToggleMenu: (menu: Exclude<ThreadComposerMenuId, null>) => void;
   openMenu: ThreadComposerMenuId;
 }
@@ -34,8 +34,7 @@ function getEffortLabel(locale: Locale, effort: ThreadComposerPreset["effort"]):
 }
 
 export function ThreadComposer(props: ThreadComposerProps) {
-  const { draft, effort, locale, mode, model, onChangeDraft, onSelectEffort, onSelectMode, onSelectModel, onToggleMenu, openMenu } =
-    props;
+  const { draft, effort, locale, mode, runtimeLabel, onChangeDraft, onSelectEffort, onSelectMode, onOpenRuntimeModal, onToggleMenu, openMenu } = props;
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
@@ -74,35 +73,17 @@ export function ThreadComposer(props: ThreadComposerProps) {
 
             <div className="thread-composer-control">
               <button
-                aria-label={model}
-                aria-expanded={openMenu === "model"}
-                aria-haspopup="menu"
+                aria-label={runtimeLabel || t(locale, "workspace.thread.runtimePlaceholder")}
+                aria-haspopup="dialog"
                 className="thread-composer-select-button"
                 onClick={() => {
-                  onToggleMenu("model");
+                  onOpenRuntimeModal();
                 }}
                 type="button"
               >
-                <span>{model}</span>
+                <span>{runtimeLabel || t(locale, "workspace.thread.runtimePlaceholder")}</span>
                 <ChevronDown className="thread-composer-chevron" />
               </button>
-
-              {openMenu === "model" ? (
-                <MenuPanel ariaLabel={t(locale, "workspace.thread.modelMenuAria")} className="thread-composer-menu">
-                  {(["GPT-5.3-Codex", "GPT-5.3", "GPT-4.1"] as const).map((modelOption) => (
-                    <button
-                      className={`thread-panel-menu-item${model === modelOption ? " is-active" : ""}`}
-                      key={modelOption}
-                      onClick={() => {
-                        onSelectModel(modelOption);
-                      }}
-                      type="button"
-                    >
-                      {modelOption}
-                    </button>
-                  ))}
-                </MenuPanel>
-              ) : null}
             </div>
 
             <div className="thread-composer-control">

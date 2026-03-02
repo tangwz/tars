@@ -1,5 +1,6 @@
 import { t } from "@/i18n/translate";
 import type { Locale } from "@/i18n/types";
+import type { RuntimeSelection } from "@/features/runtime/runtimeTypes";
 import type { RecentProject } from "@/services/persistence/projectRepository";
 
 export interface WorkspaceThreadSummary {
@@ -17,7 +18,7 @@ export interface ThreadHeaderState {
 
 export interface ThreadComposerPreset {
   draft: string;
-  model: "GPT-5.3-Codex" | "GPT-5.3" | "GPT-4.1";
+  runtime: RuntimeSelection;
   effort: "low" | "medium" | "high";
   mode: "plan" | "chat";
 }
@@ -83,7 +84,12 @@ export function buildMockWorkspaceData(locale: Locale, projects: RecentProject[]
             draft: "",
             effort: threadIndex === 2 ? "medium" : "high",
             mode: threadIndex === 2 ? "chat" : "plan",
-            model: threadIndex === 1 ? "GPT-5.3" : "GPT-5.3-Codex",
+            runtime:
+              threadIndex === 0
+                ? { runtimeId: "codex", source: "thread" }
+                : threadIndex === 1
+                  ? { runtimeId: "kimi", source: "thread" }
+                  : { runtimeId: null, source: "default" },
           },
           header: {
             approvalMode: threadIndex === 2 ? "review" : "submit",

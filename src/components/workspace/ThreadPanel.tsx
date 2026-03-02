@@ -7,11 +7,15 @@ import type {
   ThreadStatusMeta,
   WorkspaceThreadDetail,
 } from "@/components/workspace/mockWorkspaceThreads";
+import { getRuntimeDisplayName } from "@/components/runtime/RuntimeList";
 import { ThreadComposer, type ThreadComposerMenuId } from "@/components/workspace/ThreadComposer";
 import { ThreadEmptyState, type ThreadEmptyMenuId } from "@/components/workspace/ThreadEmptyState";
 import { ThreadPanelHeader, type ThreadPanelMenuId } from "@/components/workspace/ThreadPanelHeader";
 import { ThreadStatusBar, type ThreadStatusMenuId } from "@/components/workspace/ThreadStatusBar";
 import type { Locale } from "@/i18n/types";
+import { runtimeSelectors, useRuntimeStore } from "@/stores/runtimeStore";
+import { useUIStore } from "@/stores/uiStore";
+import { useWorkspaceStore, workspaceSelectors } from "@/stores/workspaceStore";
 
 type ThreadPanelMenu = ThreadComposerMenuId | ThreadEmptyMenuId | ThreadPanelMenuId | ThreadStatusMenuId;
 
@@ -28,11 +32,15 @@ export function ThreadPanel(props: ThreadPanelProps) {
   const [openMenu, setOpenMenu] = useState<ThreadPanelMenu>(null);
   const [openTarget, setOpenTarget] = useState<ThreadHeaderState["openTarget"]>(detail.header.openTarget);
   const [approvalMode, setApprovalMode] = useState<ThreadHeaderState["approvalMode"]>(detail.header.approvalMode);
-  const [model, setModel] = useState<ThreadComposerPreset["model"]>(detail.composer.model);
   const [effort, setEffort] = useState<ThreadComposerPreset["effort"]>(detail.composer.effort);
   const [mode, setMode] = useState<ThreadComposerPreset["mode"]>(detail.composer.mode);
   const [accessLevel, setAccessLevel] = useState<ThreadStatusMeta["accessLevel"]>(detail.statusBar.accessLevel);
+  const defaultRuntimeId = useRuntimeStore(runtimeSelectors.defaultRuntimeId);
+  const threadRuntimeOverride = useWorkspaceStore((state) => workspaceSelectors.threadRuntimeOverridesById(state)[detail.id] ?? null);
   const panelRef = useRef<HTMLElement | null>(null);
+
+  const runtimeId = threadRuntimeOverride ?? detail.composer.runtime.runtimeId ?? defaultRuntimeId;
+  const runtimeLabel = getRuntimeDisplayName(runtimeId);
 
   useEffect(() => {
     setDraft(detail.composer.draft);
@@ -40,7 +48,6 @@ export function ThreadPanel(props: ThreadPanelProps) {
     setOpenMenu(null);
     setOpenTarget(detail.header.openTarget);
     setApprovalMode(detail.header.approvalMode);
-    setModel(detail.composer.model);
     setEffort(detail.composer.effort);
     setMode(detail.composer.mode);
     setAccessLevel(detail.statusBar.accessLevel);
@@ -118,7 +125,6 @@ export function ThreadPanel(props: ThreadPanelProps) {
           effort={effort}
           locale={locale}
           mode={mode}
-          model={model}
           onChangeDraft={setDraft}
           onSelectEffort={(value) => {
             setEffort(value);
@@ -128,12 +134,15 @@ export function ThreadPanel(props: ThreadPanelProps) {
             setMode(value);
             setOpenMenu(null);
           }}
-          onSelectModel={(value) => {
-            setModel(value);
-            setOpenMenu(null);
+          onOpenRuntimeModal={() => {
+            useUIStore.getState().openRuntimeModal({
+              selectedRuntimeId: runtimeId,
+              threadId: detail.id,
+            });
           }}
           onToggleMenu={handleToggleMenu}
-          openMenu={openMenu === "effort" || openMenu === "mode" || openMenu === "model" ? openMenu : null}
+          openMenu={openMenu === "effort" || openMenu === "mode" ? openMenu : null}
+          runtimeLabel={runtimeLabel}
         />
 
         <ThreadStatusBar

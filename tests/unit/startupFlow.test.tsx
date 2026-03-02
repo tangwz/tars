@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { t } from "../../src/lib/i18n/translate";
 import { useLocaleStore } from "../../src/stores/localeStore";
+import { useRuntimeStore } from "../../src/stores/runtimeStore";
 import { useUIStore } from "../../src/stores/uiStore";
 import { useWorkspaceStore } from "../../src/stores/workspaceStore";
 
@@ -55,14 +56,28 @@ describe("startupFlow", () => {
       isLoadingRecent: true,
       isOpeningProject: false,
       isSettingsOpen: false,
+      runtimeModal: {
+        isOpen: false,
+        threadId: null,
+        selectedRuntimeId: null,
+        filter: "all",
+        isVerifying: false,
+        errorMessage: "",
+      },
     });
     useLocaleStore.setState({ locale: "en", isLocaleBootstrapped: false });
+    useRuntimeStore.setState({
+      isRuntimeBootstrapped: false,
+      defaultRuntimeId: null,
+      authMetadataById: {},
+    });
     useWorkspaceStore.setState({
       currentProjectPath: null,
       recentProjects: [],
       selectedProjectPath: null,
       selectedThreadId: null,
       isDatabaseReady: false,
+      threadRuntimeOverridesById: {},
     });
     document.documentElement.classList.remove("dark-theme");
   });

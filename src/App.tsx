@@ -1,6 +1,8 @@
 import { useEffect } from "react";
+import { RuntimeSelectionModal } from "@/components/runtime/RuntimeSelectionModal";
 import { AppRouter } from "@/app/router";
 import { useLocaleBootstrap } from "@/hooks/useLocaleBootstrap";
+import { useRuntimeBootstrap } from "@/hooks/useRuntimeBootstrap";
 import { isMacDesktop } from "@/lib/platform/isMacDesktop";
 import { useWorkspaceBootstrap } from "@/hooks/useWorkspaceBootstrap";
 import { uiSelectors, useUIStore } from "@/stores/uiStore";
@@ -11,6 +13,7 @@ function App() {
 
   useWorkspaceBootstrap();
   useLocaleBootstrap();
+  useRuntimeBootstrap();
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark-theme", theme === "dark");
@@ -24,7 +27,12 @@ function App() {
     };
   }, [isMacOverlayTitlebar]);
 
-  return <AppRouter />;
+  return (
+    <>
+      <AppRouter />
+      <RuntimeSelectionModal />
+    </>
+  );
 }
 
 export default App;

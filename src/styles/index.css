@@ -861,6 +861,337 @@
   bottom: calc(100% + 0.45rem);
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgb(15 23 42 / 30%);
+  backdrop-filter: blur(10px);
+  display: grid;
+  place-items: center;
+  padding: 32px;
+}
+
+.modal-shell {
+  width: min(1080px, calc(100vw - 64px));
+  max-height: calc(100vh - 64px);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--thread-border) 94%, transparent);
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--thread-surface-strong) 98%, white);
+  box-shadow: 0 28px 80px rgb(15 23 42 / 18%);
+}
+
+.runtime-selector-modal {
+  display: flex;
+  flex-direction: column;
+}
+
+.runtime-selector-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.4rem 1.5rem 1.1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--thread-border) 86%, transparent);
+}
+
+.runtime-selector-modal-copy {
+  min-width: 0;
+}
+
+.runtime-selector-modal-title {
+  margin: 0;
+  font-size: 1.22rem;
+  font-weight: 650;
+}
+
+.runtime-selector-modal-description {
+  margin: 0.4rem 0 0;
+  color: var(--thread-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.runtime-selector-close-button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--thread-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.runtime-selector-close-button:hover {
+  background: color-mix(in srgb, var(--surface-strong) 88%, transparent);
+}
+
+.runtime-selector-close-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.runtime-selector-modal-body {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.95fr) minmax(320px, 1.15fr);
+  min-height: 520px;
+}
+
+.runtime-selector-list {
+  border-right: 1px solid color-mix(in srgb, var(--thread-border) 84%, transparent);
+  padding: 1.1rem 1rem 1.2rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.runtime-selector-filter-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.runtime-selector-filter-chip,
+.runtime-auth-method-chip {
+  border: 1px solid color-mix(in srgb, var(--thread-border) 92%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--thread-surface-strong) 96%, transparent);
+  padding: 0.44rem 0.78rem;
+  font-size: 0.82rem;
+  font-weight: 560;
+  color: color-mix(in srgb, var(--fg-color) 78%, var(--thread-muted));
+}
+
+.runtime-selector-filter-chip.is-active,
+.runtime-auth-method-chip.is-active {
+  border-color: color-mix(in srgb, var(--thread-blue) 48%, var(--thread-border));
+  background: color-mix(in srgb, var(--thread-blue) 12%, white);
+  color: var(--thread-blue);
+}
+
+.runtime-selector-items {
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding-right: 0.15rem;
+}
+
+.runtime-selector-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid color-mix(in srgb, var(--thread-border) 92%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, white 78%, var(--thread-surface-strong));
+  padding: 0.9rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+
+.runtime-auth-primary-button:hover,
+.runtime-auth-secondary-button:hover {
+  transform: translateY(-1px);
+}
+
+.runtime-selector-item:hover {
+  border-color: color-mix(in srgb, var(--thread-blue) 38%, var(--thread-border));
+  box-shadow: 0 8px 20px rgb(59 130 246 / 8%);
+}
+
+.runtime-selector-item.is-active {
+  border-color: color-mix(in srgb, var(--thread-blue) 52%, var(--thread-border));
+  box-shadow: 0 10px 24px rgb(59 130 246 / 10%);
+}
+
+.runtime-selector-item-header,
+.runtime-selector-item-title-group,
+.runtime-selector-item-meta,
+.runtime-auth-header,
+.runtime-auth-actions,
+.runtime-auth-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.runtime-selector-item-title-group {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.runtime-selector-item-title {
+  font-size: 0.95rem;
+  font-weight: 620;
+}
+
+.runtime-selector-kind-badge,
+.runtime-selector-auth-badge,
+.runtime-auth-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.22rem 0.52rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.runtime-selector-kind-badge {
+  background: color-mix(in srgb, var(--surface-strong) 90%, transparent);
+  color: var(--thread-muted);
+}
+
+.runtime-selector-auth-badge,
+.runtime-auth-status {
+  background: color-mix(in srgb, var(--thread-green) 11%, white);
+  color: var(--thread-green);
+}
+
+.runtime-selector-auth-badge.is-warning,
+.runtime-auth-status.is-warning {
+  background: color-mix(in srgb, #d06b17 10%, white);
+  color: #d06b17;
+}
+
+.runtime-selector-item-description,
+.runtime-auth-description,
+.runtime-auth-oauth-hint {
+  margin: 0;
+  color: var(--thread-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.runtime-selector-item-meta {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  color: color-mix(in srgb, var(--fg-color) 62%, var(--thread-muted));
+  font-size: 0.74rem;
+  font-weight: 560;
+}
+
+.runtime-auth-panel {
+  padding: 1.25rem 1.35rem 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.runtime-auth-title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 640;
+}
+
+.runtime-auth-subtitle {
+  margin: 0.22rem 0 0;
+  font-size: 0.84rem;
+  color: var(--thread-muted);
+}
+
+.runtime-auth-methods {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.runtime-auth-connected-panel,
+.runtime-auth-connect-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.runtime-auth-info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--thread-border) 90%, transparent);
+  border-radius: 18px;
+  padding: 0.95rem 1rem;
+  background: color-mix(in srgb, white 80%, var(--thread-surface-strong));
+}
+
+.runtime-auth-info-label {
+  color: var(--thread-muted);
+  font-size: 0.8rem;
+}
+
+.runtime-auth-info-value {
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.runtime-auth-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.84rem;
+  color: color-mix(in srgb, var(--fg-color) 88%, var(--thread-muted));
+}
+
+.runtime-auth-input-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.runtime-auth-input {
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--thread-border) 88%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, white 85%, var(--thread-surface-strong));
+  padding: 0.82rem 0.92rem;
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.runtime-auth-error {
+  margin: 0;
+  color: var(--thread-red);
+  font-size: 0.82rem;
+}
+
+.runtime-auth-primary-button,
+.runtime-auth-secondary-button {
+  min-height: 40px;
+  border-radius: 14px;
+  padding: 0.7rem 0.95rem;
+  font-size: 0.84rem;
+  font-weight: 620;
+  transition: transform 140ms ease, background-color 140ms ease, color 140ms ease;
+}
+
+.runtime-auth-primary-button {
+  border: 0;
+  background: color-mix(in srgb, var(--button-bg) 88%, var(--fg-color));
+  color: var(--button-fg);
+}
+
+.runtime-auth-secondary-button {
+  border: 1px solid color-mix(in srgb, var(--thread-border) 88%, transparent);
+  background: transparent;
+  color: color-mix(in srgb, var(--fg-color) 82%, var(--thread-muted));
+}
+
+.runtime-auth-primary-button:disabled,
+.runtime-auth-secondary-button:disabled,
+.runtime-selector-close-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .settings-layout {
   min-height: 100vh;
   display: grid;
@@ -1148,6 +1479,24 @@
     grid-template-columns: 1fr;
   }
 
+  .modal-backdrop {
+    padding: 16px;
+  }
+
+  .modal-shell {
+    width: min(100vw - 32px, 1080px);
+    max-height: calc(100vh - 32px);
+  }
+
+  .runtime-selector-modal-body {
+    grid-template-columns: 1fr;
+  }
+
+  .runtime-selector-list {
+    border-right: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--thread-border) 84%, transparent);
+  }
+
   .settings-sidebar {
     min-height: 0;
     border-right: 0;
@@ -1216,6 +1565,15 @@
 
   .thread-composer-toolbar-start {
     flex-wrap: wrap;
+  }
+
+  .runtime-selector-modal-header {
+    padding-inline: 1rem;
+  }
+
+  .runtime-selector-list,
+  .runtime-auth-panel {
+    padding-inline: 1rem;
   }
 
   .settings-row {
