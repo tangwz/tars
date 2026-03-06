@@ -1,46 +1,87 @@
+import { getRuntimeAuthMethodSpec, isRuntimeAuthMethodAvailable } from "@/features/runtime/runtimeAuthCapabilities";
 import { getRuntimeCatalogItem } from "@/features/runtime/runtimeCatalog";
-import type { AuthMethod, RuntimeAuthMetadata, RuntimeId } from "@/features/runtime/runtimeTypes";
+import type {
+  AuthMethod,
+  RuntimeAuthAvailability,
+  RuntimeAuthMetadata,
+  RuntimeId,
+} from "@/features/runtime/runtimeTypes";
 import { t } from "@/i18n/translate";
 import type { Locale } from "@/i18n/types";
 
 interface RuntimeAuthPanelProps {
   locale: Locale;
   runtimeId: RuntimeId;
+  authAvailability?: RuntimeAuthAvailability;
   metadata?: RuntimeAuthMetadata;
   selectedAuthMethod: AuthMethod;
   apiKey: string;
   setAsDefault: boolean;
   isVerifying: boolean;
+  isOAuthPending: boolean;
   errorMessage: string;
   onChangeAuthMethod: (authMethod: AuthMethod) => void;
   onChangeApiKey: (value: string) => void;
   onChangeSetAsDefault: (value: boolean) => void;
   onAuthorizeApiKey: () => void;
   onAuthorizeOAuth: () => void;
+  onCancelOAuth: () => void;
   onUseAuthorizedRuntime: () => void;
   onDisconnect: () => void;
+}
+
+function getOAuthHint(
+  locale: Locale,
+  runtimeId: RuntimeId,
+  authAvailability: RuntimeAuthAvailability | undefined,
+  isPending: boolean,
+): string {
+  if (isPending) {
+    return t(locale, "workspace.runtime.oauthPendingHint");
+  }
+
+  if (runtimeId === "gemini-cli" && authAvailability?.oauth === "unavailable") {
+    return t(locale, "workspace.runtime.oauthGeminiUnavailableHint");
+  }
+
+  if (runtimeId === "gemini-cli") {
+    return t(locale, "workspace.runtime.oauthGoogleHint");
+  }
+
+  return t(locale, "workspace.runtime.oauthCodexUnavailableHint");
 }
 
 export function RuntimeAuthPanel(props: RuntimeAuthPanelProps) {
   const {
     locale,
     runtimeId,
+    authAvailability,
     metadata,
     selectedAuthMethod,
     apiKey,
     setAsDefault,
     isVerifying,
+    isOAuthPending,
     errorMessage,
     onChangeAuthMethod,
     onChangeApiKey,
     onChangeSetAsDefault,
     onAuthorizeApiKey,
     onAuthorizeOAuth,
+    onCancelOAuth,
     onUseAuthorizedRuntime,
     onDisconnect,
   } = props;
   const runtime = getRuntimeCatalogItem(runtimeId);
   const isAuthorized = metadata?.status === "authorized";
+  const selectedMethodSpec = getRuntimeAuthMethodSpec(runtimeId, selectedAuthMethod);
+  const isSelectedMethodAvailable = isRuntimeAuthMethodAvailable(runtimeId, selectedAuthMethod, authAvailability);
+  const showGeminiUnavailableHint =
+    !isAuthorized &&
+    runtimeId === "gemini-cli" &&
+    authAvailability?.oauth === "unavailable" &&
+    selectedAuthMethod !== "oauth";
+  const isBusy = isVerifying || isOAuthPending;
 
   return (
     <div className="runtime-auth-panel">
@@ -62,21 +103,35 @@ export function RuntimeAuthPanel(props: RuntimeAuthPanelProps) {
 
       <p className="runtime-auth-description">{runtime.description}</p>
 
-      {runtime.authMethods.length > 1 ? (
-        <div className="runtime-auth-methods" role="group">
-          {runtime.authMethods.map((method) => (
+      <div className="runtime-auth-methods" role="group">
+        {runtime.auth.map((spec) => {
+          const isMethodAvailable = isRuntimeAuthMethodAvailable(runtimeId, spec.method, authAvailability);
+          const isMethodSelectable = spec.availability === "available" && !isBusy;
+
+          return (
             <button
-              className={`runtime-auth-method-chip${selectedAuthMethod === method ? " is-active" : ""}`}
-              key={method}
+              className={`runtime-auth-method-chip${selectedAuthMethod === spec.method ? " is-active" : ""}${!isMethodAvailable ? " is-disabled" : ""}`}
+              disabled={!isMethodSelectable}
+              key={spec.method}
               onClick={() => {
-                onChangeAuthMethod(method);
+                onChangeAuthMethod(spec.method);
               }}
               type="button"
             >
-              {t(locale, method === "apiKey" ? "workspace.runtime.authMethodApiKey" : "workspace.runtime.authMethodOauth")}
+              {t(locale, spec.method === "apiKey" ? "workspace.runtime.authMethodApiKey" : "workspace.runtime.authMethodOauth")}
+              {spec.availability === "comingSoon" ? (
+                <span className="runtime-auth-method-chip-note">{t(locale, "workspace.runtime.authMethodComingSoon")}</span>
+              ) : null}
             </button>
-          ))}
-        </div>
+          );
+        })}
+      </div>
+
+      {!isAuthorized && selectedMethodSpec?.availability === "comingSoon" ? (
+        <p className="runtime-auth-oauth-hint">{t(locale, "workspace.runtime.authMethodUnavailableHint")}</p>
+      ) : null}
+      {showGeminiUnavailableHint ? (
+        <p className="runtime-auth-oauth-hint">{t(locale, "workspace.runtime.oauthGeminiUnavailableHint")}</p>
       ) : null}
 
       {isAuthorized ? (
@@ -99,6 +154,7 @@ export function RuntimeAuthPanel(props: RuntimeAuthPanelProps) {
           <label className="runtime-auth-checkbox">
             <input
               checked={setAsDefault}
+              disabled={isBusy}
               onChange={(event) => {
                 onChangeSetAsDefault(event.target.checked);
               }}
@@ -120,11 +176,10 @@ export function RuntimeAuthPanel(props: RuntimeAuthPanelProps) {
         <div className="runtime-auth-connect-panel">
           {selectedAuthMethod === "apiKey" ? (
             <>
-              <label className="runtime-auth-input-label" htmlFor="runtime-api-key-input">
-                {t(locale, "workspace.runtime.apiKeyLabel")}
-              </label>
               <input
+                aria-label={t(locale, "workspace.runtime.apiKeyLabel")}
                 className="runtime-auth-input"
+                disabled={isBusy}
                 id="runtime-api-key-input"
                 onChange={(event) => {
                   onChangeApiKey(event.target.value);
@@ -134,13 +189,16 @@ export function RuntimeAuthPanel(props: RuntimeAuthPanelProps) {
                 value={apiKey}
               />
             </>
+          ) : selectedMethodSpec?.availability === "comingSoon" ? (
+            <p className="runtime-auth-oauth-hint">{t(locale, "workspace.runtime.oauthCodexUnavailableHint")}</p>
           ) : (
-            <p className="runtime-auth-oauth-hint">{t(locale, "workspace.runtime.oauthHint")}</p>
+            <p className="runtime-auth-oauth-hint">{getOAuthHint(locale, runtimeId, authAvailability, isOAuthPending)}</p>
           )}
 
           <label className="runtime-auth-checkbox">
             <input
               checked={setAsDefault}
+              disabled={isBusy}
               onChange={(event) => {
                 onChangeSetAsDefault(event.target.checked);
               }}
@@ -153,11 +211,25 @@ export function RuntimeAuthPanel(props: RuntimeAuthPanelProps) {
 
           <div className="runtime-auth-actions">
             {selectedAuthMethod === "apiKey" ? (
-              <button className="runtime-auth-primary-button" disabled={isVerifying} onClick={onAuthorizeApiKey} type="button">
+              <button className="runtime-auth-primary-button" disabled={isBusy} onClick={onAuthorizeApiKey} type="button">
                 {t(locale, "workspace.runtime.verifyAndConnect")}
               </button>
+            ) : isOAuthPending ? (
+              <>
+                <button className="runtime-auth-primary-button" disabled type="button">
+                  {t(locale, "workspace.runtime.oauthWaiting")}
+                </button>
+                <button className="runtime-auth-secondary-button" disabled={isVerifying} onClick={onCancelOAuth} type="button">
+                  {t(locale, "workspace.runtime.cancelOauth")}
+                </button>
+              </>
             ) : (
-              <button className="runtime-auth-primary-button" disabled={isVerifying} onClick={onAuthorizeOAuth} type="button">
+              <button
+                className="runtime-auth-primary-button"
+                disabled={isBusy || !isSelectedMethodAvailable}
+                onClick={onAuthorizeOAuth}
+                type="button"
+              >
                 {t(locale, "workspace.runtime.connectOauth")}
               </button>
             )}

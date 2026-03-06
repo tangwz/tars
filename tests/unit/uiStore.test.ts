@@ -16,6 +16,7 @@ describe("uiStore", () => {
         filter: "all",
         isVerifying: false,
         errorMessage: "",
+        oauthPendingSessionId: null,
       },
     });
   });
@@ -42,5 +43,15 @@ describe("uiStore", () => {
 
     useUIStore.getState().closeRuntimeModal();
     expect(useUIStore.getState().runtimeModal.isOpen).toBe(false);
+  });
+
+  it("stores and clears runtime oauth pending sessions", () => {
+    useUIStore.getState().openRuntimeModal({ threadId: "thread-1", selectedRuntimeId: "gemini-cli" });
+    useUIStore.getState().setRuntimeModalOAuthPendingSessionId("oauth-session-1");
+
+    expect(useUIStore.getState().runtimeModal.oauthPendingSessionId).toBe("oauth-session-1");
+
+    useUIStore.getState().closeRuntimeModal();
+    expect(useUIStore.getState().runtimeModal.oauthPendingSessionId).toBeNull();
   });
 });

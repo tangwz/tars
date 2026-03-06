@@ -2,7 +2,8 @@ import type { RuntimeAuthMetadata, RuntimeDefaultSelection, RuntimeId } from "@/
 import { getMeta, setMeta } from "@/services/persistence/projectRepository";
 
 const DEFAULT_SELECTION_META_KEY = "runtime_default_selection_v1";
-const AUTH_METADATA_META_KEY = "runtime_auth_metadata_v1";
+const AUTH_METADATA_META_KEY_V1 = "runtime_auth_metadata_v1";
+const AUTH_METADATA_META_KEY_V2 = "runtime_auth_metadata_v2";
 
 type RuntimeAuthMetadataMap = Partial<Record<RuntimeId, RuntimeAuthMetadata>>;
 
@@ -51,8 +52,11 @@ function parseAuthMetadata(raw: string | null): RuntimeAuthMetadataMap {
           {
             accountLabel: typeof value.accountLabel === "string" ? value.accountLabel : undefined,
             authMethod: value.authMethod as RuntimeAuthMetadata["authMethod"],
+            expiresAt: typeof value.expiresAt === "number" ? value.expiresAt : undefined,
             runtimeId: runtimeId as RuntimeId,
             status: value.status as RuntimeAuthMetadata["status"],
+            scopes: Array.isArray(value.scopes) ? value.scopes.filter((scope): scope is string => typeof scope === "string") : undefined,
+            subjectId: typeof value.subjectId === "string" ? value.subjectId : undefined,
             verifiedAt: value.verifiedAt as number,
           } satisfies RuntimeAuthMetadata,
         ]),
@@ -71,9 +75,15 @@ export async function setRuntimeDefaultSelection(selection: RuntimeDefaultSelect
 }
 
 export async function getRuntimeAuthMetadataMap(): Promise<RuntimeAuthMetadataMap> {
-  return parseAuthMetadata(await getMeta(AUTH_METADATA_META_KEY));
+  const v2 = await getMeta(AUTH_METADATA_META_KEY_V2);
+
+  if (v2) {
+    return parseAuthMetadata(v2);
+  }
+
+  return parseAuthMetadata(await getMeta(AUTH_METADATA_META_KEY_V1));
 }
 
 export async function setRuntimeAuthMetadataMap(metadataById: RuntimeAuthMetadataMap): Promise<void> {
-  await setMeta(AUTH_METADATA_META_KEY, JSON.stringify(metadataById));
+  await setMeta(AUTH_METADATA_META_KEY_V2, JSON.stringify(metadataById));
 }

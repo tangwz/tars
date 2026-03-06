@@ -967,11 +967,27 @@
   color: color-mix(in srgb, var(--fg-color) 78%, var(--thread-muted));
 }
 
+.runtime-auth-method-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .runtime-selector-filter-chip.is-active,
 .runtime-auth-method-chip.is-active {
   border-color: color-mix(in srgb, var(--thread-blue) 48%, var(--thread-border));
   background: color-mix(in srgb, var(--thread-blue) 12%, white);
   color: var(--thread-blue);
+}
+
+.runtime-auth-method-chip.is-disabled {
+  opacity: 0.64;
+  cursor: not-allowed;
+}
+
+.runtime-auth-method-chip-note {
+  font-size: 0.68rem;
+  font-weight: 650;
 }
 
 .runtime-selector-items {

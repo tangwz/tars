@@ -1,4 +1,8 @@
-import type { RuntimeCatalogItem, RuntimeId, RuntimeKind } from "@/features/runtime/runtimeTypes";
+import type { AuthMethod, RuntimeAuthMethodSpec, RuntimeCatalogItem, RuntimeId, RuntimeKind } from "@/features/runtime/runtimeTypes";
+
+function buildAuth(methods: ReadonlyArray<[AuthMethod, RuntimeAuthMethodSpec["availability"]]>): RuntimeAuthMethodSpec[] {
+  return methods.map(([method, availability]) => ({ method, availability }));
+}
 
 export const runtimeCatalog: RuntimeCatalogItem[] = [
   {
@@ -6,32 +10,42 @@ export const runtimeCatalog: RuntimeCatalogItem[] = [
     displayName: "KIMI",
     kind: "llm",
     description: "Moonshot AI hosted model runtime for chat and reasoning tasks.",
-    authMethods: ["apiKey"],
+    auth: buildAuth([["apiKey", "available"]]),
     defaultAuthMethod: "apiKey",
+    provider: "moonshot",
   },
   {
     id: "codex",
     displayName: "Codex",
     kind: "coding-agent",
     description: "Coding agent runtime that can be connected with API key or OAuth.",
-    authMethods: ["apiKey", "oauth"],
-    defaultAuthMethod: "oauth",
+    auth: buildAuth([
+      ["apiKey", "available"],
+      ["oauth", "comingSoon"],
+    ]),
+    defaultAuthMethod: "apiKey",
+    provider: "openai",
   },
   {
     id: "gemini-cli",
-    displayName: "gemini cli",
+    displayName: "Gemini",
     kind: "coding-agent",
     description: "CLI-first coding agent runtime for project assistance workflows.",
-    authMethods: ["apiKey", "oauth"],
+    auth: buildAuth([
+      ["apiKey", "available"],
+      ["oauth", "available"],
+    ]),
     defaultAuthMethod: "oauth",
+    provider: "google",
   },
   {
     id: "glm",
     displayName: "GLM",
     kind: "llm",
     description: "Zhipu GLM runtime for general-purpose LLM requests.",
-    authMethods: ["apiKey"],
+    auth: buildAuth([["apiKey", "available"]]),
     defaultAuthMethod: "apiKey",
+    provider: "zhipu",
   },
 ];
 

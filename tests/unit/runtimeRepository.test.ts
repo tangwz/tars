@@ -81,4 +81,57 @@ describe("runtimeRepository", () => {
       },
     });
   });
+
+  it("falls back to v1 auth metadata when v2 is missing", async () => {
+    mockIPC((cmd, payload) => {
+      if (cmd === "plugin:sql|load") {
+        return "sqlite:tars.db";
+      }
+
+      if (cmd === "plugin:sql|select") {
+        const query = normalizeQuery((payload as { query?: string })?.query);
+        const values = ((payload as { values?: unknown[] })?.values ?? []) as unknown[];
+
+        if (query.startsWith("select value from app_meta where key =")) {
+          const key = String(values[0]);
+
+          if (key === "runtime_auth_metadata_v2") {
+            return [];
+          }
+
+          if (key === "runtime_auth_metadata_v1") {
+            return [
+              {
+                value: JSON.stringify({
+                  glm: {
+                    runtimeId: "glm",
+                    status: "expired",
+                    authMethod: "apiKey",
+                    verifiedAt: 456,
+                  },
+                }),
+              },
+            ];
+          }
+        }
+
+        return [];
+      }
+
+      if (cmd === "plugin:sql|execute") {
+        return [0, null];
+      }
+
+      return undefined;
+    });
+
+    await expect(getRuntimeAuthMetadataMap()).resolves.toEqual({
+      glm: {
+        runtimeId: "glm",
+        status: "expired",
+        authMethod: "apiKey",
+        verifiedAt: 456,
+      },
+    });
+  });
 });

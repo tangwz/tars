@@ -1,0 +1,14 @@
+{
+  "geminiOAuth": {
+    "enabled": false,
+    "clientId": "",
+    "clientSecret": "",
+    "scopes": [
+      "openid",
+      "email",
+      "profile",
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/generative-language.retriever"
+    ]
+  }
+}

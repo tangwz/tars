@@ -10,6 +10,7 @@ interface RuntimeModalState {
   filter: "all" | RuntimeKind;
   isVerifying: boolean;
   errorMessage: string;
+  oauthPendingSessionId: string | null;
 }
 
 interface UIState {
@@ -34,6 +35,7 @@ interface UIActions {
   setRuntimeModalFilter: (filter: RuntimeModalState["filter"]) => void;
   setRuntimeModalVerifying: (value: boolean) => void;
   setRuntimeModalErrorMessage: (message: string) => void;
+  setRuntimeModalOAuthPendingSessionId: (sessionId: string | null) => void;
 }
 
 export type UIStore = UIState & UIActions;
@@ -51,6 +53,7 @@ export const useUIStore = create<UIStore>((set) => ({
     filter: "all",
     isVerifying: false,
     errorMessage: "",
+    oauthPendingSessionId: null,
   },
   setTheme: (theme) => set({ theme }),
   toggleTheme: () =>
@@ -70,6 +73,7 @@ export const useUIStore = create<UIStore>((set) => ({
         filter: "all",
         isVerifying: false,
         errorMessage: "",
+        oauthPendingSessionId: null,
       },
     }),
   closeRuntimeModal: () =>
@@ -79,6 +83,7 @@ export const useUIStore = create<UIStore>((set) => ({
         isOpen: false,
         isVerifying: false,
         errorMessage: "",
+        oauthPendingSessionId: null,
       },
     })),
   setRuntimeModalSelectedRuntimeId: (runtimeId) =>
@@ -108,6 +113,13 @@ export const useUIStore = create<UIStore>((set) => ({
       runtimeModal: {
         ...state.runtimeModal,
         errorMessage: message,
+      },
+    })),
+  setRuntimeModalOAuthPendingSessionId: (sessionId) =>
+    set((state) => ({
+      runtimeModal: {
+        ...state.runtimeModal,
+        oauthPendingSessionId: sessionId,
       },
     })),
 }));

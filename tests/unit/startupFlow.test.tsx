@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { mockIPC } from "@tauri-apps/api/mocks";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { t } from "../../src/lib/i18n/translate";
@@ -49,6 +50,17 @@ describe("startupFlow", () => {
     mocks.getMeta.mockResolvedValue(null);
     mocks.openProjectDirectory.mockResolvedValue(null);
     mocks.directoryExists.mockResolvedValue(true);
+    mockIPC((command) => {
+      if (command === "get_runtime_auth_availability") {
+        return {};
+      }
+
+      if (command === "get_runtime_secret_statuses") {
+        return [];
+      }
+
+      return undefined;
+    });
 
     useUIStore.setState({
       theme: "light",
@@ -63,6 +75,7 @@ describe("startupFlow", () => {
         filter: "all",
         isVerifying: false,
         errorMessage: "",
+        oauthPendingSessionId: null,
       },
     });
     useLocaleStore.setState({ locale: "en", isLocaleBootstrapped: false });
@@ -70,6 +83,7 @@ describe("startupFlow", () => {
       isRuntimeBootstrapped: false,
       defaultRuntimeId: null,
       authMetadataById: {},
+      runtimeAuthAvailabilityById: {},
     });
     useWorkspaceStore.setState({
       currentProjectPath: null,

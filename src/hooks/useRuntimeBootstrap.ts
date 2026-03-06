@@ -1,6 +1,7 @@
 import { useEffect } from "react";
-import { getRuntimeSecret } from "@/services/tauri/runtimeSecretClient";
-import { getRuntimeAuthMetadataMap, getRuntimeDefaultSelection } from "@/services/persistence/runtimeRepository";
+import { initializeProjectDatabase } from "@/services/persistence/projectRepository";
+import { getRuntimeAuthMetadataMap, getRuntimeDefaultSelection, setRuntimeAuthMetadataMap } from "@/services/persistence/runtimeRepository";
+import { getRuntimeAuthAvailability, getRuntimeSecretStatuses } from "@/services/tauri/runtimeSecretClient";
 import { useRuntimeStore } from "@/stores/runtimeStore";
 import { useUIStore } from "@/stores/uiStore";
 
@@ -10,41 +11,52 @@ export function useRuntimeBootstrap() {
 
     const bootstrap = async () => {
       try {
-        const [defaultSelection, metadataById] = await Promise.all([
+        await initializeProjectDatabase();
+
+        const [defaultSelection, metadataById, availabilityById] = await Promise.all([
           getRuntimeDefaultSelection(),
           getRuntimeAuthMetadataMap(),
+          getRuntimeAuthAvailability(),
         ]);
 
         if (!active) {
           return;
         }
 
-        const normalizedEntries = await Promise.all(
-          Object.values(metadataById).map(async (metadata) => {
-            if (!metadata) {
-              return null;
-            }
+        const runtimeIds = Object.keys(metadataById) as Array<"kimi" | "codex" | "gemini-cli" | "glm">;
+        const secretStatuses = runtimeIds.length > 0 ? await getRuntimeSecretStatuses(runtimeIds) : [];
+        const secretStatusById = Object.fromEntries(secretStatuses.map((status) => [status.runtimeId, status]));
+        const normalizedEntries = Object.values(metadataById).map((metadata) => {
+          if (!metadata) {
+            return null;
+          }
 
-            const secret = await getRuntimeSecret(metadata.runtimeId);
+          const secretStatus = secretStatusById[metadata.runtimeId];
+          const expiresAt = secretStatus?.expiresAt ?? metadata.expiresAt;
+          const isExpired = !secretStatus?.exists || (typeof expiresAt === "number" && expiresAt <= Date.now());
 
-            return [
-              metadata.runtimeId,
-              {
-                ...metadata,
-                status: secret ? metadata.status : "expired",
-              },
-            ] as const;
-          }),
-        );
+          return [
+            metadata.runtimeId,
+            {
+              ...metadata,
+              expiresAt,
+              status: isExpired ? "expired" : metadata.status,
+            },
+          ] as const;
+        });
 
         if (!active) {
           return;
         }
 
         useRuntimeStore.getState().setDefaultRuntimeId(defaultSelection.defaultRuntimeId);
-        useRuntimeStore
-          .getState()
-          .replaceAuthMetadataById(Object.fromEntries(normalizedEntries.filter((entry) => entry !== null)));
+        useRuntimeStore.getState().setRuntimeAuthAvailabilityById(availabilityById);
+        const normalizedMetadata = Object.fromEntries(normalizedEntries.filter((entry) => entry !== null));
+        useRuntimeStore.getState().replaceAuthMetadataById(normalizedMetadata);
+
+        if (JSON.stringify(normalizedMetadata) !== JSON.stringify(metadataById)) {
+          await setRuntimeAuthMetadataMap(normalizedMetadata);
+        }
       } catch (error) {
         useUIStore.getState().setStartupError(error instanceof Error ? error.message : String(error));
       } finally {

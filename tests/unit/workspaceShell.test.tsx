@@ -89,12 +89,14 @@ describe("WorkspaceShell", () => {
         filter: "all",
         isVerifying: false,
         errorMessage: "",
+        oauthPendingSessionId: null,
       },
     });
     useRuntimeStore.setState({
       isRuntimeBootstrapped: true,
       defaultRuntimeId: null,
       authMetadataById: {},
+      runtimeAuthAvailabilityById: {},
     });
     useWorkspaceStore.setState({
       currentProjectPath: "/tmp/tars",
@@ -326,7 +328,7 @@ describe("WorkspaceShell", () => {
       expect(screen.queryByText("当前线程")).not.toBeInTheDocument();
 
       fireEvent.click(screen.getByRole("tab", { name: "LLM" }));
-      expect(screen.queryByText("gemini cli")).not.toBeInTheDocument();
+      expect(screen.queryByText("Gemini")).not.toBeInTheDocument();
       fireEvent.click(screen.getByText("KIMI"));
       expect(screen.getByText("连接 Runtime")).toBeInTheDocument();
 
@@ -348,12 +350,20 @@ describe("WorkspaceShell", () => {
     "authorizes a runtime with api key and updates the thread runtime button",
     async () => {
       mockIPC((command, payload) => {
-        if (command === "store_runtime_secret") {
+        if (command === "authorize_runtime_with_api_key") {
           expect(payload).toEqual({
-            payload: JSON.stringify({ apiKey: "sk-test-12345678", type: "apiKey" }),
+            apiKey: "sk-test-12345678",
             runtimeId: "kimi",
           });
-          return null;
+          return {
+            metadata: {
+              runtimeId: "kimi",
+              status: "authorized",
+              authMethod: "apiKey",
+              verifiedAt: 123,
+              accountLabel: "sk--****5678",
+            },
+          };
         }
 
         return undefined;
@@ -376,8 +386,127 @@ describe("WorkspaceShell", () => {
       });
 
       expect(mocks.setMeta).toHaveBeenCalledWith(
-        "runtime_auth_metadata_v1",
+        "runtime_auth_metadata_v2",
         expect.stringContaining("\"runtimeId\":\"kimi\""),
+      );
+    },
+    20_000,
+  );
+
+  it(
+    "shows oauth as coming soon for codex and keeps the action disabled",
+    async () => {
+      renderWorkspaceShell();
+
+      fireEvent.click(screen.getByRole("button", { name: /^Codex$/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole("dialog", { name: "选择 Runtime" })).toBeInTheDocument();
+      });
+
+      const oauthChip = screen.getByRole("button", { name: /OAuth.*即将支持/i });
+      expect(oauthChip).toBeDisabled();
+      expect(screen.queryByText("该授权方式会在后续阶段开放。")).not.toBeInTheDocument();
+    },
+    20_000,
+  );
+
+  it(
+    "keeps gemini oauth selectable while blocking the connect action when the build has no google sign-in",
+    async () => {
+      useRuntimeStore.setState({
+        isRuntimeBootstrapped: true,
+        defaultRuntimeId: null,
+        authMetadataById: {},
+        runtimeAuthAvailabilityById: {
+          "gemini-cli": {
+            apiKey: "available",
+            oauth: "unavailable",
+            reason: "build_not_configured",
+          },
+        },
+      });
+
+      renderWorkspaceShell();
+
+      fireEvent.click(screen.getByRole("button", { name: /^Codex$/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole("dialog", { name: "选择 Runtime" })).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("Gemini"));
+
+      const oauthChip = screen.getByRole("button", { name: "OAuth" });
+      expect(oauthChip).toBeEnabled();
+      fireEvent.click(oauthChip);
+
+      expect(screen.getByRole("button", { name: "使用 OAuth 连接" })).toBeDisabled();
+      expect(screen.getByText("当前构建未启用 Google 登录。")).toBeInTheDocument();
+    },
+    20_000,
+  );
+
+  it(
+    "completes gemini oauth and updates the thread runtime button",
+    async () => {
+      let pollCount = 0;
+
+      mockIPC((command, payload) => {
+        if (command === "start_runtime_oauth") {
+          expect(payload).toEqual({ runtimeId: "gemini-cli" });
+          return {
+            sessionId: "oauth-session-1",
+            authorizationUrl: "https://accounts.google.com/o/oauth2/v2/auth?state=oauth-session-1",
+          };
+        }
+
+        if (command === "poll_runtime_oauth_session") {
+          expect(payload).toEqual({ sessionId: "oauth-session-1" });
+          pollCount += 1;
+
+          return pollCount === 1
+            ? {
+                state: "succeeded",
+                metadata: {
+                  runtimeId: "gemini-cli",
+                  status: "authorized",
+                  authMethod: "oauth",
+                  verifiedAt: 456,
+                  expiresAt: 789,
+                  accountLabel: "user@example.com",
+                  subjectId: "subject-1",
+                  scopes: ["openid", "email"],
+                },
+              }
+            : {
+                state: "cancelled",
+              };
+        }
+
+        return undefined;
+      });
+
+      renderWorkspaceShell();
+
+      fireEvent.click(screen.getByRole("button", { name: /^Codex$/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole("dialog", { name: "选择 Runtime" })).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText("Gemini"));
+      expect(screen.getByText("将在浏览器中完成 Google 登录，刷新令牌会安全保存在当前设备。")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "使用 OAuth 连接" }));
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /^Gemini$/i })).toBeInTheDocument();
+      });
+
+      expect(mocks.setMeta).toHaveBeenCalledWith(
+        "runtime_auth_metadata_v2",
+        expect.stringContaining("\"runtimeId\":\"gemini-cli\""),
       );
     },
     20_000,

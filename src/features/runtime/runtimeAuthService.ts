@@ -1,68 +1,72 @@
 import { getRuntimeCatalogItem } from "@/features/runtime/runtimeCatalog";
-import type { AuthMethod, RuntimeAuthMetadata, RuntimeId } from "@/features/runtime/runtimeTypes";
-import { deleteRuntimeSecret, storeRuntimeSecret } from "@/services/tauri/runtimeSecretClient";
+import { isRuntimeAuthMethodAvailable } from "@/features/runtime/runtimeAuthCapabilities";
+import type {
+  AuthMethod,
+  OAuthSessionStatus,
+  RuntimeAuthMetadata,
+  RuntimeAuthError,
+  RuntimeId,
+  StartOAuthResult,
+} from "@/features/runtime/runtimeTypes";
+import {
+  authorizeRuntimeWithApiKey,
+  cancelRuntimeOAuth,
+  pollRuntimeOAuthSession,
+  revokeRuntimeAuth,
+  startRuntimeOAuth,
+} from "@/services/tauri/runtimeSecretClient";
+import { useRuntimeStore } from "@/stores/runtimeStore";
 
-function maskApiKey(apiKey: string): string {
-  const trimmed = apiKey.trim();
-
-  if (trimmed.length <= 8) {
-    return "****";
-  }
-
-  return `${trimmed.slice(0, 3)}-****${trimmed.slice(-4)}`;
-}
-
-function assertAuthMethod(runtimeId: RuntimeId, authMethod: AuthMethod): void {
+function createUnsupportedAuthMethodError(runtimeId: RuntimeId, authMethod: AuthMethod): RuntimeAuthError {
   const runtime = getRuntimeCatalogItem(runtimeId);
 
-  if (!runtime.authMethods.includes(authMethod)) {
-    throw new Error(`${runtime.displayName} does not support ${authMethod} authentication.`);
+  return {
+    code: "unsupported_auth_method",
+    message: `${runtime.displayName} does not support ${authMethod} authentication in this build.`,
+    recoverable: false,
+  };
+}
+
+function assertAvailableAuthMethod(runtimeId: RuntimeId, authMethod: AuthMethod): void {
+  const runtimeAvailability = useRuntimeStore.getState().runtimeAuthAvailabilityById[runtimeId];
+
+  if (!isRuntimeAuthMethodAvailable(runtimeId, authMethod, runtimeAvailability)) {
+    throw createUnsupportedAuthMethodError(runtimeId, authMethod);
   }
 }
 
 export const runtimeAuthService = {
   async authorizeWithApiKey(runtimeId: RuntimeId, apiKey: string): Promise<RuntimeAuthMetadata> {
-    assertAuthMethod(runtimeId, "apiKey");
+    assertAvailableAuthMethod(runtimeId, "apiKey");
 
     const trimmedKey = apiKey.trim();
 
-    if (trimmedKey.length < 8) {
-      throw new Error("API key must be at least 8 characters.");
+    if (!trimmedKey) {
+      throw {
+        code: "invalid_credentials",
+        message: "API key must not be empty.",
+        recoverable: true,
+      } satisfies RuntimeAuthError;
     }
 
-    await storeRuntimeSecret(runtimeId, JSON.stringify({ apiKey: trimmedKey, type: "apiKey" }));
-
-    return {
-      accountLabel: maskApiKey(trimmedKey),
-      authMethod: "apiKey",
-      runtimeId,
-      status: "authorized",
-      verifiedAt: Date.now(),
-    };
+    const result = await authorizeRuntimeWithApiKey(runtimeId, trimmedKey);
+    return result.metadata;
   },
 
-  async authorizeWithOAuth(runtimeId: RuntimeId): Promise<RuntimeAuthMetadata> {
-    assertAuthMethod(runtimeId, "oauth");
+  async startOAuth(runtimeId: RuntimeId): Promise<StartOAuthResult> {
+    assertAvailableAuthMethod(runtimeId, "oauth");
+    return startRuntimeOAuth(runtimeId);
+  },
 
-    const runtime = getRuntimeCatalogItem(runtimeId);
-    const payload = {
-      accessToken: `oauth_${runtimeId}_${Date.now()}`,
-      issuedAt: Date.now(),
-      type: "oauth",
-    };
+  async pollOAuthSession(sessionId: string): Promise<OAuthSessionStatus> {
+    return pollRuntimeOAuthSession(sessionId);
+  },
 
-    await storeRuntimeSecret(runtimeId, JSON.stringify(payload));
-
-    return {
-      accountLabel: `${runtime.displayName} OAuth`,
-      authMethod: "oauth",
-      runtimeId,
-      status: "authorized",
-      verifiedAt: Date.now(),
-    };
+  async cancelOAuthSession(sessionId: string): Promise<void> {
+    await cancelRuntimeOAuth(sessionId);
   },
 
   async revoke(runtimeId: RuntimeId): Promise<void> {
-    await deleteRuntimeSecret(runtimeId);
+    await revokeRuntimeAuth(runtimeId);
   },
 };
